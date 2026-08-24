@@ -188,37 +188,33 @@ export const useBracketStore = defineStore('bracket', () => {
     }
   };
 
-  const reportMatch = async (winnerId: string, scoresCsv?: string) => {
-    if (!activeMatchId.value) return;
+  const reportMatch = async (winnerId: string, scoresCsv?: string, targetMatchId?: string) => {
+    const matchId = targetMatchId || activeMatchId.value;
+    if (!matchId) return;
     loading.value = true;
     error.value = null;
     try {
       if (provider.value === 'startgg') {
         await nodecg.sendMessage('startgg:reportSet', {
-          setId: activeMatchId.value,
+          setId: matchId,
           winnerId,
           scoresCsv,
         });
         
-        
-        const match = matches.value.find(m => m.id === activeMatchId.value);
+        const match = matches.value.find(m => m.id === matchId);
         if (match) {
           match.state = 'completed';
           match.winnerId = winnerId;
-          
-          
         }
-        
       } else if (provider.value === 'challonge') {
         await nodecg.sendMessage('challonge:reportMatch', {
           slug: challongeTournamentSlug.value,
-          matchId: activeMatchId.value,
+          matchId,
           winnerId,
           scoresCsv,
         });
 
-        
-        const match = matches.value.find(m => m.id === activeMatchId.value);
+        const match = matches.value.find(m => m.id === matchId);
         if (match) {
           match.state = 'completed';
           match.winnerId = winnerId;
@@ -234,6 +230,91 @@ export const useBracketStore = defineStore('bracket', () => {
       loading.value = false;
     }
   };
+
+  const resetMatch = async (matchId: string) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      if (provider.value === 'startgg') {
+        await nodecg.sendMessage('startgg:resetSet', { setId: matchId });
+        const match = matches.value.find(m => m.id === matchId);
+        if (match) {
+          match.state = 'pending';
+          match.winnerId = undefined;
+          if (match.player1) match.player1.score = null;
+          if (match.player2) match.player2.score = null;
+        }
+        if (startggGroupId.value) {
+          debouncedFetchStartggSets(startggGroupId.value);
+        }
+      } else if (provider.value === 'challonge') {
+        const match = matches.value.find(m => m.id === matchId);
+        const action = match?.state === 'in_progress' ? 'unmark_as_underway' : 'reopen';
+        await nodecg.sendMessage('challonge:changeMatchState', {
+          slug: challongeTournamentSlug.value,
+          matchId,
+          action,
+        });
+        if (match) {
+          match.state = 'pending';
+          match.winnerId = undefined;
+          if (match.player1) match.player1.score = null;
+          if (match.player2) match.player2.score = null;
+        }
+        if (challongeTournamentSlug.value) {
+          debouncedFetchChallongeMatches(challongeTournamentSlug.value);
+        }
+      }
+      notifySuccess(t('matchActionResetSuccess'));
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : t('matchActionResetFailed'));
+      error.value = msg;
+      notifyError(msg);
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const markMatchInProgress = async (matchId: string) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      if (provider.value === 'startgg') {
+        await nodecg.sendMessage('startgg:markSetInProgress', { setId: matchId });
+        const match = matches.value.find(m => m.id === matchId);
+        if (match) {
+          match.state = 'in_progress';
+        }
+        if (startggGroupId.value) {
+          debouncedFetchStartggSets(startggGroupId.value);
+        }
+      } else if (provider.value === 'challonge') {
+        await nodecg.sendMessage('challonge:changeMatchState', {
+          slug: challongeTournamentSlug.value,
+          matchId,
+          action: 'mark_as_underway',
+        });
+        const match = matches.value.find(m => m.id === matchId);
+        if (match) {
+          match.state = 'in_progress';
+        }
+        if (challongeTournamentSlug.value) {
+          debouncedFetchChallongeMatches(challongeTournamentSlug.value);
+        }
+      }
+      notifySuccess(t('matchActionInProgressSuccess'));
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : t('matchActionInProgressFailed'));
+      error.value = msg;
+      notifyError(msg);
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+
 
   const attachTournament = () => {
     if (provider.value === 'startgg' && startggTournamentSlug.value) {
@@ -337,9 +418,12 @@ export const useBracketStore = defineStore('bracket', () => {
     fetchStartggStandings,
     fetchChallongeMatches: debouncedFetchChallongeMatches,
     reportMatch,
+    resetMatch,
+    markMatchInProgress,
     attached,
     attachTournament,
     detachTournament,
   };
 });
+
 
