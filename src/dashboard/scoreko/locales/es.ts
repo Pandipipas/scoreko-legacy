@@ -121,6 +121,16 @@ export default {
   bracketUncover: "Quitar del marcador",
   bracketWinnerUndetermined: "No se pudo determinar el ganador. Por favor, ingresa los marcadores.",
   bracketWinnersBracket: "Winners Bracket",
+  matchActions: "Acciones de partida",
+  matchActionReset: "Resetear partida",
+  matchActionResetConfirmTitle: "¿Resetear partida?",
+  matchActionResetConfirmMsg: "¿Estás seguro de que quieres resetear esta partida? Esto borrará el marcador reportado y revertirá su estado.",
+  matchActionMarkInProgress: "Marcar en progreso",
+  matchActionResetSuccess: "Partida reseteada correctamente",
+  matchActionResetFailed: "Error al resetear la partida",
+  matchActionInProgressSuccess: "Partida marcada en progreso",
+  matchActionInProgressFailed: "Error al marcar la partida en progreso",
+
 
   // =============================================================================
   // COMMENTARY PANEL
