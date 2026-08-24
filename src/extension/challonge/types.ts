@@ -1,4 +1,8 @@
-export type ChallongeErrorPayload = { errors?: { detail?: string }; error?: string } | null;
+export type ChallongeErrorPayload = {
+  errors?: string[] | { detail?: string; title?: string } | Array<{ detail?: string; title?: string }>;
+  error?: string;
+  message?: string;
+} | null;
 
 export type {
   RecentTournament,

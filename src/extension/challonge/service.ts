@@ -125,3 +125,42 @@ export async function reportMatch(slug: string, matchId: string, winnerId: strin
   globalRequestCache.invalidateExact(`challonge:matches:${slug}`);
   return { success: true };
 }
+
+export async function changeMatchState(
+  slug: string,
+  matchId: string,
+  action: 'reopen' | 'mark_underway' | 'unmark_underway' | 'mark_as_underway' | 'unmark_as_underway',
+  token: string,
+) {
+  let endpointAction = action;
+  if (action === 'mark_underway') endpointAction = 'mark_as_underway';
+  if (action === 'unmark_underway') endpointAction = 'unmark_as_underway';
+
+  try {
+    await requestChallonge(
+      `/tournaments/${encodeURIComponent(slug)}/matches/${encodeURIComponent(matchId)}/${endpointAction}.json`,
+      token,
+      'POST',
+    );
+  } catch (err) {
+    if (endpointAction === 'reopen') {
+      try {
+        await requestChallonge(
+          `/tournaments/${encodeURIComponent(slug)}/matches/${encodeURIComponent(matchId)}/unmark_as_underway.json`,
+          token,
+          'POST',
+        );
+      } catch {
+        throw err;
+      }
+    } else {
+      throw err;
+    }
+  }
+
+  globalRequestCache.invalidateExact(`challonge:matches:${slug}`);
+  return { success: true };
+}
+
+
+
