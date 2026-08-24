@@ -104,3 +104,11 @@ export interface PackManifest {
   characters: PackCharacter[];
 }
 
+export interface BracketStanding {
+  placement: number;
+  entrantId: string;
+  entrantName: string;
+  isPlacementResolved?: boolean;
+}
+
+

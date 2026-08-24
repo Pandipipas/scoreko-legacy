@@ -10,4 +10,6 @@ export type {
   BracketPlayer,
   StreamQueueItem,
   StreamQueueSet,
+  BracketStanding,
 } from '../../types/index.js';
+
