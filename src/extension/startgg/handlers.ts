@@ -12,6 +12,8 @@ import {
   fetchGroups,
   fetchSets,
   reportSet,
+  resetSet,
+  markSetInProgress,
   fetchStreamQueue,
   fetchEventStandings,
 } from './service.js';
@@ -226,5 +228,36 @@ export function setupHandlers() {
       }
     }
   }));
+
+  nodecg.listenFor('startgg:resetSet', createHandler({
+    requiresToken: 'startgg',
+    handler: async (payload: unknown, ack, { token }) => {
+      const setId = getStringProp(payload, 'setId');
+      if (!setId) { sendAck(ack, 'Missing set ID'); return; }
+
+      try {
+        const result = await resetSet(setId, token);
+        sendAck(ack, null, result);
+      } catch (error) {
+        sendAck(ack, error instanceof Error ? error.message : 'Error resetting set');
+      }
+    }
+  }));
+
+  nodecg.listenFor('startgg:markSetInProgress', createHandler({
+    requiresToken: 'startgg',
+    handler: async (payload: unknown, ack, { token }) => {
+      const setId = getStringProp(payload, 'setId');
+      if (!setId) { sendAck(ack, 'Missing set ID'); return; }
+
+      try {
+        const result = await markSetInProgress(setId, token);
+        sendAck(ack, null, result);
+      } catch (error) {
+        sendAck(ack, error instanceof Error ? error.message : 'Error marking set in progress');
+      }
+    }
+  }));
 }
+
 

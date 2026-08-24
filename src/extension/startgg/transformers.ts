@@ -52,7 +52,7 @@ export function transformSetNode(s: StartGGSetNode): BracketSet {
   let state: BracketSet['state'] = 'pending';
   if (s.state === 2 || s.state === 6) state = 'in_progress';
   else if (s.state === 3) state = 'completed';
-  else if (s.state === 1 && p1Participant && p2Participant) state = 'in_progress';
+
 
   const p1Score = s.slots[0]?.standing?.stats?.score?.value ?? null;
   const p2Score = s.slots[1]?.standing?.stats?.score?.value ?? null;

@@ -10,9 +10,11 @@ import {
   fetchTournamentPlayers,
   fetchMatches,
   reportMatch,
+  changeMatchState,
 } from './service.js';
 
 export function setupHandlers() {
+
   nodecg.listenFor('challonge:createOAuthSession', createHandler({
     handler: async (_payload: unknown, ack) => {
       const mode = getOAuthMode();
@@ -152,4 +154,28 @@ export function setupHandlers() {
       }
     }
   }));
+
+  nodecg.listenFor('challonge:changeMatchState', createHandler({
+    requiresToken: 'challonge',
+    handler: async (payload: unknown, ack, { token }) => {
+      const slug = normalizeTournamentSlug(getStringProp(payload, 'slug'));
+      const matchId = String((payload as Record<string, unknown>).matchId ?? '').trim();
+      const action = String((payload as Record<string, unknown>).action ?? '').trim() as 'reopen' | 'mark_underway' | 'unmark_underway' | 'mark_as_underway' | 'unmark_as_underway';
+
+      if (!slug) { sendAck(ack, 'Missing tournament slug'); return; }
+      if (!matchId) { sendAck(ack, 'Missing match ID'); return; }
+      if (!['reopen', 'mark_underway', 'unmark_underway', 'mark_as_underway', 'unmark_as_underway'].includes(action)) {
+        sendAck(ack, 'Invalid match action');
+        return;
+      }
+
+      try {
+        const result = await changeMatchState(slug, matchId, action, token);
+        sendAck(ack, null, result);
+      } catch (error) {
+        sendAck(ack, error instanceof Error ? error.message : 'Unknown error while changing match state');
+      }
+    }
+  }));
 }
+

@@ -121,6 +121,16 @@ export default {
   bracketUncover: "Remove from Scoreboard",
   bracketWinnerUndetermined: "Winner could not be determined. Please enter scores.",
   bracketWinnersBracket: "Winners Bracket",
+  matchActions: "Match Actions",
+  matchActionReset: "Reset Match",
+  matchActionResetConfirmTitle: "Reset Match?",
+  matchActionResetConfirmMsg: "Are you sure you want to reset this match? This will clear any reported score and revert its progress.",
+  matchActionMarkInProgress: "Mark in Progress",
+  matchActionResetSuccess: "Match reset successfully",
+  matchActionResetFailed: "Failed to reset match",
+  matchActionInProgressSuccess: "Match marked in progress",
+  matchActionInProgressFailed: "Failed to mark match in progress",
+
 
   // =============================================================================
   // COMMENTARY PANEL

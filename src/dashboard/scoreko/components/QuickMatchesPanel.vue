@@ -20,7 +20,7 @@ const pickRandomMatches = () => {
     return;
   }
   
-  const playablePool = matches.filter((m: BracketSet) => m.state === 'in_progress');
+  const playablePool = matches.filter((m: BracketSet) => (m.player1?.id && m.player2?.id && m.state !== 'completed') || m.state === 'in_progress');
   
   const shuffled = playablePool.sort(() => 0.5 - Math.random());
   randomMatches.value = shuffled.slice(0, 3);

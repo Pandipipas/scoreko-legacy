@@ -31,6 +31,8 @@ import {
   GROUP_SETS_QUERY,
   GET_SET_FOR_REPORT_QUERY,
   REPORT_SET_MUTATION,
+  RESET_SET_MUTATION,
+  MARK_SET_IN_PROGRESS_MUTATION,
   STREAM_QUEUE_QUERY,
   EVENT_STANDINGS_QUERY,
 } from './queries.js';
@@ -268,4 +270,17 @@ export async function fetchEventStandings(eventId: string, token: string): Promi
       .sort((a, b) => a.placement - b.placement);
   });
 }
+
+export async function resetSet(setId: string, token: string) {
+  await requestStartGG(RESET_SET_MUTATION, { setId }, token);
+  globalRequestCache.invalidate('startgg:sets:');
+  return { success: true };
+}
+
+export async function markSetInProgress(setId: string, token: string) {
+  await requestStartGG(MARK_SET_IN_PROGRESS_MUTATION, { setId }, token);
+  globalRequestCache.invalidate('startgg:sets:');
+  return { success: true };
+}
+
 

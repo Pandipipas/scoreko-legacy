@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useQuasar } from 'quasar';
 import type { BracketSet } from '../../../extension/util/types';
 import { useBracketStore } from '../stores/bracket';
 import { t } from '../i18n';
@@ -11,6 +12,7 @@ const props = defineProps<{
 }>();
 
 const bracketStore = useBracketStore();
+const $q = useQuasar();
 
 const matchRef = computed(() => props.match);
 const {
@@ -21,6 +23,47 @@ const {
   submitGridReport,
   coverMatch
 } = useCoverMatch(matchRef);
+
+const isPlayable = computed(() => Boolean(props.match.player1?.id && props.match.player2?.id));
+const hasActions = computed(() => (props.match.state === 'pending' && isPlayable.value) || props.match.state === 'completed' || props.match.state === 'in_progress');
+
+
+
+const handleMarkInProgress = async () => {
+  try {
+    await bracketStore.markMatchInProgress(props.match.id);
+  } catch {
+    // error handled in store
+  }
+};
+
+const promptResetMatch = () => {
+  $q.dialog({
+    title: t('matchActionResetConfirmTitle'),
+    message: t('matchActionResetConfirmMsg'),
+    cancel: {
+      color: 'grey-6',
+      flat: true,
+      noCaps: true,
+      label: t('settingsManualCancel'),
+    },
+    ok: {
+      color: 'warning',
+      unelevated: true,
+      noCaps: true,
+      label: t('matchActionReset'),
+    },
+    class: 'glass-panel',
+    dark: true,
+  }).onOk(async () => {
+    try {
+      await bracketStore.resetMatch(props.match.id);
+    } catch {
+      // error handled in store
+    }
+  });
+};
+
 </script>
 
 <template>
@@ -92,10 +135,18 @@ const {
       v-if="variant !== 'bracket'"
       class="q-py-sm bg-subtle text-center"
     >
-      <div class="text-caption text-primary text-weight-medium">
+      <div 
+        class="text-caption text-weight-medium"
+        :class="{
+          'text-positive': match.state === 'completed',
+          'text-warning': match.state === 'in_progress',
+          'text-grey-6': match.state === 'pending'
+        }"
+      >
         {{ match.state === 'completed' ? t('bracketStateCompleted') : (match.state === 'in_progress' ? t('bracketStateInProgress') : t('bracketStateUpcoming')) }}
       </div>
     </QCardSection>
+
 
     <div class="action-overlay absolute-full row items-center justify-center q-gutter-x-sm q-px-sm">
       <QBtn
@@ -216,6 +267,71 @@ const {
         <QTooltip class="glass-tooltip">
           {{ bracketStore.activeMatchId === match.id ? t('bracketUncover') : t('bracketCover') }}
         </QTooltip>
+      </QBtn>
+
+      <QBtn
+        v-if="hasActions"
+        class="glass-panel"
+        color="primary"
+        text-color="primary"
+        outline
+        round
+        icon="more_vert"
+      >
+        <QTooltip class="glass-tooltip">
+          {{ t('matchActions') }}
+        </QTooltip>
+        <QMenu
+          auto-close
+          class="glass-panel"
+        >
+          <QList
+            dense
+            style="min-width: 170px"
+          >
+            <QItem
+              v-if="match.state === 'pending' && isPlayable"
+              clickable
+              @click="handleMarkInProgress"
+            >
+              <QItemSection
+                avatar
+                style="min-width: 28px;"
+              >
+                <QIcon
+                  name="play_circle"
+                  color="primary"
+                  size="18px"
+                />
+              </QItemSection>
+              <QItemSection>
+                <QItemLabel>{{ t('matchActionMarkInProgress') }}</QItemLabel>
+              </QItemSection>
+            </QItem>
+
+            <QItem
+              v-if="match.state === 'completed' || match.state === 'in_progress'"
+              clickable
+              @click="promptResetMatch"
+            >
+              <QItemSection
+                avatar
+                style="min-width: 28px;"
+              >
+                <QIcon
+                  name="replay"
+                  color="warning"
+                  size="18px"
+                />
+              </QItemSection>
+              <QItemSection>
+                <QItemLabel class="text-warning">
+                  {{ t('matchActionReset') }}
+                </QItemLabel>
+              </QItemSection>
+            </QItem>
+          </QList>
+        </QMenu>
       </QBtn>
     </div>
   </QCard>
