@@ -199,5 +199,21 @@ export const EVENT_STANDINGS_QUERY = `
   }
 `;
 
+export const RESET_SET_MUTATION = `
+  mutation ResetSet($setId: ID!) {
+    resetSet(setId: $setId) {
+      id
+      state
+    }
+  }
+`;
 
+export const MARK_SET_IN_PROGRESS_MUTATION = `
+  mutation MarkSetInProgress($setId: ID!) {
+    markSetInProgress(setId: $setId) {
+      id
+      state
+    }
+  }
+`;
 
