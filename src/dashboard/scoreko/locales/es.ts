@@ -410,9 +410,23 @@ export default {
   tooltipIncreaseScore: "Sumar punto",
   tooltipManualApiToken: "Ingresar token de API manualmente",
   tooltipRefreshMatches: "Recargar partidas",
+  tooltipRefreshStandings: "Actualizar clasificaciones",
   tooltipResetShortcuts: "Restablecer todos los atajos",
   tooltipSaveLocalOverride: "Guardar ajuste local",
   tooltipSwapPlayers: "Intercambiar jugadores (Atajo: Shift + Enter)",
+
+  // =============================================================================
+  // STANDINGS
+  // =============================================================================
+  standingsTitle: "Clasificaciones",
+  standingsSubtitle: "Resultados finales y ranking del torneo",
+  standingsEmpty: "Aún no hay clasificaciones disponibles para este evento.",
+  standingsEvent: "Evento",
+  standingsPodium: "Podio",
+  standingsTop8: "Top 8",
+  standingsRank: "Posición",
+  standingsPlayer: "Jugador / Equipo",
+  standingsInProgress: "En progreso",
 
   // =============================================================================
   // STREAM QUEUE
