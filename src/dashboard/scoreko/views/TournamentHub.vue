@@ -257,7 +257,10 @@ watch(activeHubTab, (newTab) => {
 const filteredMatches = computed(() => {
   let matches = bracketStore.matches;
   if (showOnlyPlayable.value) {
-    matches = matches.filter((m: import('../../../extension/util/types').BracketSet) => m.state !== 'pending');
+    matches = matches.filter((m: import('../../../extension/util/types').BracketSet) => {
+      const isPlayable = Boolean(m.player1?.id && m.player2?.id);
+      return isPlayable || m.state === 'in_progress' || m.state === 'completed';
+    });
   }
   if (hideCompleted.value) {
     matches = matches.filter((m: import('../../../extension/util/types').BracketSet) => m.state !== 'completed');
