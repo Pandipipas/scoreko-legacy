@@ -1,9 +1,10 @@
-import type { ImportedPlayer, BracketSet, BracketPlayer, StreamQueueSet } from '../util/types.js';
-import type { StartGGParticipantNode, StartGGSetNode, StartGGStreamQueueSetNode } from './types.js';
+import type { ImportedPlayer, BracketSet, BracketPlayer, StreamQueueSet, BracketStanding } from '../util/types.js';
+import type { StartGGParticipantNode, StartGGSetNode, StartGGStreamQueueSetNode, StartGGStandingNode } from './types.js';
 import { resolveCountryCode } from '../util/helpers.js';
 import { cacheParticipantEntrant } from './service.js';
 
 export function transformParticipantNode(participant: StartGGParticipantNode): ImportedPlayer | null {
+
   const playerId = String(participant.id);
   const gamertag = (participant.gamerTag ?? '').trim();
   if (!gamertag) return null;
@@ -127,4 +128,15 @@ export function transformStreamQueueSetNode(s: StartGGStreamQueueSetNode): Strea
     player2,
   };
 }
+
+export function transformStandingNode(node: StartGGStandingNode): BracketStanding | null {
+  if (!node.entrant || !node.entrant.name) return null;
+  return {
+    placement: node.placement ?? 0,
+    entrantId: String(node.entrant.id),
+    entrantName: node.entrant.name,
+  };
+}
+
+
 

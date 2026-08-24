@@ -137,3 +137,25 @@ export interface StartGGStreamQueueResponse {
   } | null;
 }
 
+export interface StartGGStandingEntrantNode {
+  id: string | number;
+  name: string;
+}
+
+export interface StartGGStandingNode {
+  id?: string | number | null;
+  placement: number | null;
+  entrant: StartGGStandingEntrantNode | null;
+}
+
+
+export interface StartGGEventStandingsResponse {
+  event: {
+    standings: {
+      pageInfo?: { totalPages: number };
+      nodes: StartGGStandingNode[];
+    } | null;
+  } | null;
+}
+
+
