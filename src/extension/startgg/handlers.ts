@@ -12,6 +12,7 @@ import {
   fetchGroups,
   fetchSets,
   reportSet,
+  fetchStreamQueue,
 } from './service.js';
 
 export function setupHandlers() {
@@ -190,6 +191,21 @@ export function setupHandlers() {
         sendAck(ack, null, result);
       } catch (error) {
         sendAck(ack, error instanceof Error ? error.message : 'Error reporting set');
+      }
+    }
+  }));
+
+  nodecg.listenFor('startgg:fetchStreamQueue', createHandler({
+    requiresToken: 'startgg',
+    handler: async (payload: unknown, ack, { token }) => {
+      const slug = getStringProp(payload, 'slug');
+      if (!slug) { sendAck(ack, 'Missing tournament slug'); return; }
+
+      try {
+        const queue = await fetchStreamQueue(slug, token);
+        sendAck(ack, null, queue);
+      } catch (error) {
+        sendAck(ack, error instanceof Error ? error.message : 'Error fetching stream queue');
       }
     }
   }));

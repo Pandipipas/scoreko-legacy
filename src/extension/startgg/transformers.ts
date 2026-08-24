@@ -1,5 +1,5 @@
-import type { ImportedPlayer, BracketSet, BracketPlayer } from '../util/types.js';
-import type { StartGGParticipantNode, StartGGSetNode } from './types.js';
+import type { ImportedPlayer, BracketSet, BracketPlayer, StreamQueueSet } from '../util/types.js';
+import type { StartGGParticipantNode, StartGGSetNode, StartGGStreamQueueSetNode } from './types.js';
 import { resolveCountryCode } from '../util/helpers.js';
 import { cacheParticipantEntrant } from './service.js';
 
@@ -91,3 +91,40 @@ export function transformSetNode(s: StartGGSetNode): BracketSet {
     winnerId: resolvedWinnerId,
   };
 }
+
+export function transformStreamQueueSetNode(s: StartGGStreamQueueSetNode): StreamQueueSet {
+  const p1Participant = s.slots?.[0]?.entrant?.participants?.[0];
+  const p2Participant = s.slots?.[1]?.entrant?.participants?.[0];
+
+  if (p1Participant && s.slots?.[0]?.entrant?.id) {
+    cacheParticipantEntrant(String(p1Participant.id), String(s.slots[0].entrant.id));
+  }
+  if (p2Participant && s.slots?.[1]?.entrant?.id) {
+    cacheParticipantEntrant(String(p2Participant.id), String(s.slots[1].entrant.id));
+  }
+
+  const player1: BracketPlayer | null = p1Participant ? {
+    id: String(p1Participant.id),
+    gamertag: p1Participant.gamerTag,
+    team: p1Participant.prefix ?? undefined,
+  } : null;
+
+  const player2: BracketPlayer | null = p2Participant ? {
+    id: String(p2Participant.id),
+    gamertag: p2Participant.gamerTag,
+    team: p2Participant.prefix ?? undefined,
+  } : null;
+
+  return {
+    id: String(s.id),
+    fullRoundText: s.fullRoundText || '',
+    identifier: s.identifier || '',
+    event: {
+      id: String(s.event?.id ?? ''),
+      name: s.event?.name ?? '',
+    },
+    player1,
+    player2,
+  };
+}
+
