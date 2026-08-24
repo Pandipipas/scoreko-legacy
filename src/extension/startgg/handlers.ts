@@ -13,7 +13,9 @@ import {
   fetchSets,
   reportSet,
   fetchStreamQueue,
+  fetchEventStandings,
 } from './service.js';
+
 
 export function setupHandlers() {
   nodecg.listenFor('startgg:createOAuthSession', createHandler({
@@ -209,4 +211,20 @@ export function setupHandlers() {
       }
     }
   }));
+
+  nodecg.listenFor('startgg:fetchStandings', createHandler({
+    requiresToken: 'startgg',
+    handler: async (payload: unknown, ack, { token }) => {
+      const eventId = getStringProp(payload, 'eventId');
+      if (!eventId) { sendAck(ack, 'Missing event ID'); return; }
+
+      try {
+        const standings = await fetchEventStandings(eventId, token);
+        sendAck(ack, null, standings);
+      } catch (error) {
+        sendAck(ack, error instanceof Error ? error.message : 'Error fetching standings');
+      }
+    }
+  }));
 }
+

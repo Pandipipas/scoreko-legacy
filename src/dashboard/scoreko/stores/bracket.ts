@@ -3,7 +3,7 @@ import { ref, watch } from 'vue';
 import { useNotify } from '../composables/useNotify';
 import { t } from '../i18n';
 import { attachedBracketReplicant } from '../../../browser_shared/replicants';
-import type { Schemas, BracketEvent, BracketPhase, BracketPhaseGroup, BracketSet, StreamQueueItem } from '../../../types';
+import type { Schemas, BracketEvent, BracketPhase, BracketPhaseGroup, BracketSet, StreamQueueItem, BracketStanding } from '../../../types';
 import { syncStateWithReplicant } from './store-sync';
 import { debounce } from 'quasar';
 
@@ -43,6 +43,9 @@ export const useBracketStore = defineStore('bracket', () => {
 
   const streamQueue = ref<StreamQueueItem[]>([]);
   const loadingStreamQueue = ref(false);
+
+  const standings = ref<BracketStanding[]>([]);
+  const loadingStandings = ref(false);
 
   const attached = ref<AttachedBracket>({
     provider: null,
@@ -171,6 +174,20 @@ export const useBracketStore = defineStore('bracket', () => {
     }
   };
 
+  const fetchStartggStandings = async (eventId?: string) => {
+    const targetEventId = eventId || startggEventId.value || attached.value.startggEventId;
+    if (!targetEventId) return;
+    loadingStandings.value = true;
+    try {
+      standings.value = await nodecg.sendMessage('startgg:fetchStandings', { eventId: targetEventId });
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : 'Error fetching standings');
+      notifyError(msg);
+    } finally {
+      loadingStandings.value = false;
+    }
+  };
+
   const reportMatch = async (winnerId: string, scoresCsv?: string) => {
     if (!activeMatchId.value) return;
     loading.value = true;
@@ -245,6 +262,7 @@ export const useBracketStore = defineStore('bracket', () => {
     activeMatchId.value = null;
     matches.value = [];
     streamQueue.value = [];
+    standings.value = [];
     attached.value = {
       provider: null,
       tournamentSlug: null,
@@ -306,6 +324,8 @@ export const useBracketStore = defineStore('bracket', () => {
     matches,
     streamQueue,
     loadingStreamQueue,
+    standings,
+    loadingStandings,
     activeMatchId,
     loading,
     error,
@@ -314,6 +334,7 @@ export const useBracketStore = defineStore('bracket', () => {
     fetchStartggGroups,
     fetchStartggSets: debouncedFetchStartggSets,
     fetchStartggStreamQueue,
+    fetchStartggStandings,
     fetchChallongeMatches: debouncedFetchChallongeMatches,
     reportMatch,
     attached,
@@ -321,3 +342,4 @@ export const useBracketStore = defineStore('bracket', () => {
     detachTournament,
   };
 });
+

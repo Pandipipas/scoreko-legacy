@@ -5,7 +5,7 @@ import {
 } from './api.js';
 import { globalRequestCache, SimpleLRUCache } from '../util/request-cache.js';
 import { startggParticipantEntrantMapReplicant } from '../util/replicants.js';
-import type { ImportedPlayer, BracketSet, StreamQueueItem } from '../util/types.js';
+import type { ImportedPlayer, BracketSet, StreamQueueItem, BracketStanding } from '../util/types.js';
 import type {
   StartGGRecentTournamentsResponse,
   StartGGTournamentParticipantsResponse,
@@ -19,8 +19,9 @@ import type {
   StartGGStreamQueueResponse,
   StartGGStreamQueueNode,
   StartGGStreamNode,
+  StartGGEventStandingsResponse,
 } from './types.js';
-import { transformParticipantNode, transformSetNode, transformStreamQueueSetNode } from './transformers.js';
+import { transformParticipantNode, transformSetNode, transformStreamQueueSetNode, transformStandingNode } from './transformers.js';
 import {
   RECENT_TOURNAMENTS_QUERY,
   TOURNAMENT_PARTICIPANTS_QUERY,
@@ -31,7 +32,9 @@ import {
   GET_SET_FOR_REPORT_QUERY,
   REPORT_SET_MUTATION,
   STREAM_QUEUE_QUERY,
+  EVENT_STANDINGS_QUERY,
 } from './queries.js';
+
 
 const MAX_CACHE_SIZE = 1000;
 const participantToEntrantCache = new SimpleLRUCache<string, string>(MAX_CACHE_SIZE);
@@ -250,3 +253,19 @@ export async function fetchStreamQueue(slug: string, token: string): Promise<Str
       }));
   });
 }
+
+export async function fetchEventStandings(eventId: string, token: string): Promise<BracketStanding[]> {
+  return globalRequestCache.wrap(`startgg:standings:${eventId}`, 30 * 1000, async () => {
+    const data = await requestStartGG<StartGGEventStandingsResponse>(
+      EVENT_STANDINGS_QUERY,
+      { eventId, page: 1, perPage: 64 },
+      token
+    );
+    const nodes = data.event?.standings?.nodes ?? [];
+    return nodes
+      .map(transformStandingNode)
+      .filter((s): s is BracketStanding => s !== null)
+      .sort((a, b) => a.placement - b.placement);
+  });
+}
+

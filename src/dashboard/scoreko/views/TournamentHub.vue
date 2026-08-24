@@ -8,6 +8,7 @@ import challongeIcoUrl from '../assets/challonge.ico';
 import startggSvgUrl from '../assets/startgg.svg';
 import BracketMatchCard from '../components/BracketMatchCard.vue';
 import TournamentStreamQueueTab from '../components/TournamentStreamQueueTab.vue';
+import TournamentStandingsDialog from '../components/TournamentStandingsDialog.vue';
 import { useIntegration } from '../composables/useIntegration';
 import { useBracketStore } from '../stores/bracket';
 import { usePlayersStore } from '../stores/players';
@@ -324,6 +325,7 @@ const pinnedTournamentName = computed(() => {
 });
 
 const isSetupDialogOpen = ref(false);
+const isStandingsDialogOpen = ref(false);
 const playersImported = ref(false);
 const isImportingPlayers = ref(false);
 
@@ -376,6 +378,12 @@ const onPinAndFinish = () => {
     </QBanner>
 
     <div class="bracket-content">
+      <!-- TOURNAMENT STANDINGS MODAL -->
+      <TournamentStandingsDialog
+        v-model="isStandingsDialogOpen"
+        :event-id="bracketStore.startggEventId || bracketStore.attached.startggEventId || undefined"
+      />
+
       <!-- TOURNAMENT SETUP MODAL -->
       <QDialog
         v-model="isSetupDialogOpen"
@@ -814,6 +822,16 @@ const onPinAndFinish = () => {
                   @click="bracketStore.detachTournament()"
                 />
                 <QBtn
+                  v-if="bracketStore.provider === 'startgg' && hasPinnedTournament"
+                  outline
+                  no-caps
+                  color="primary"
+                  icon="leaderboard"
+                  :label="t('standingsTitle')"
+                  class="q-ml-sm"
+                  @click="isStandingsDialogOpen = true"
+                />
+                <QBtn
                   unelevated
                   no-caps
                   color="primary"
@@ -884,6 +902,16 @@ const onPinAndFinish = () => {
                     {{ bracketStore.streamQueue.reduce((acc, i) => acc + (i.sets?.length || 0), 0) }}
                   </QBadge>
                 </QBtn>
+                <QBtn
+                  v-if="bracketStore.provider === 'startgg' && hasPinnedTournament"
+                  outline
+                  no-caps
+                  color="primary"
+                  icon="leaderboard"
+                  :label="t('standingsTitle')"
+                  class="q-ml-sm"
+                  @click="isStandingsDialogOpen = true"
+                />
               </div>
               
               <div class="row items-center q-gutter-md">

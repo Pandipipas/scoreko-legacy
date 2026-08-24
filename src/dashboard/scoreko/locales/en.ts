@@ -410,9 +410,23 @@ export default {
   tooltipIncreaseScore: "Increase score",
   tooltipManualApiToken: "Manually enter a developer API token",
   tooltipRefreshMatches: "Refresh matches",
+  tooltipRefreshStandings: "Refresh standings",
   tooltipResetShortcuts: "Reset all shortcuts to defaults",
   tooltipSaveLocalOverride: "Save local override",
   tooltipSwapPlayers: "Swap left and right players (Shortcut: Shift + Enter)",
+
+  // =============================================================================
+  // STANDINGS
+  // =============================================================================
+  standingsTitle: "Standings",
+  standingsSubtitle: "Final results and tournament rankings",
+  standingsEmpty: "No standings available for this event yet.",
+  standingsEvent: "Event",
+  standingsPodium: "Podium",
+  standingsTop8: "Top 8",
+  standingsRank: "Placement",
+  standingsPlayer: "Player / Team",
+  standingsInProgress: "In progress",
 
   // =============================================================================
   // STREAM QUEUE

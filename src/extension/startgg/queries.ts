@@ -179,3 +179,25 @@ export const STREAM_QUEUE_QUERY = `
   }
 `;
 
+export const EVENT_STANDINGS_QUERY = `
+  query EventStandings($eventId: ID!, $page: Int!, $perPage: Int!) {
+    event(id: $eventId) {
+      standings(query: { page: $page, perPage: $perPage }) {
+        pageInfo {
+          totalPages
+        }
+        nodes {
+          id
+          placement
+          entrant {
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+`;
+
+
+
