@@ -415,6 +415,23 @@ export default {
   tooltipSwapPlayers: "Swap left and right players (Shortcut: Shift + Enter)",
 
   // =============================================================================
+  // STREAM QUEUE
+  // =============================================================================
+  streamQueueActiveOnScoreboard: "Active on Scoreboard",
+  streamQueueAllStreams: "All Streams",
+  streamQueueBroadcastingChannel: "Broadcasting Channel",
+  streamQueueChannel: "Channel",
+  streamQueueEmpty: "No streams configured or no matches currently queued for this tournament.",
+  streamQueueMatchPlural: "{count} matches in queue",
+  streamQueueMatchSingular: "1 match in queue",
+  streamQueueNoSetsForStream: "No sets currently assigned to this stream.",
+  streamQueueRefresh: "Refresh Stream Queue",
+  streamQueueSendToScoreboard: "Send to Scoreboard",
+  streamQueueSetsCount: "{count} sets",
+  streamQueueSubtitle: "Live match assignment across broadcast channels",
+  streamQueueTitle: "Stream Queue",
+
+  // =============================================================================
   // TOURNAMENT HUB
   // =============================================================================
   tournamentBtnBack: "Back",
@@ -432,3 +449,4 @@ export default {
   tournamentStepPinFinish: "2. Pin Tournament & Finish",
   tournamentStepPlayersImported: "1. Players Imported",
 };
+
