@@ -109,3 +109,31 @@ export interface StartGGReportSetResponse {
     slots: StartGGReportSetSlotNode[];
   } | null;
 }
+
+export interface StartGGStreamNode {
+  id: string | number;
+  streamName: string;
+  streamSource: string;
+}
+
+export interface StartGGStreamQueueSetNode {
+  id: string | number;
+  fullRoundText: string;
+  identifier: string;
+  round?: number;
+  state?: number;
+  event: { id: string | number; name: string };
+  slots: StartGGSetSlotNode[];
+}
+
+export interface StartGGStreamQueueNode {
+  stream: StartGGStreamNode | null;
+  sets: StartGGStreamQueueSetNode[] | null;
+}
+
+export interface StartGGStreamQueueResponse {
+  tournament: {
+    streamQueue: StartGGStreamQueueNode[] | null;
+  } | null;
+}
+

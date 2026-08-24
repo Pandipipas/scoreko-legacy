@@ -415,6 +415,23 @@ export default {
   tooltipSwapPlayers: "Intercambiar jugadores (Atajo: Shift + Enter)",
 
   // =============================================================================
+  // STREAM QUEUE
+  // =============================================================================
+  streamQueueActiveOnScoreboard: "Activa en el marcador",
+  streamQueueAllStreams: "Todos los Streams",
+  streamQueueBroadcastingChannel: "Canal de Transmisión",
+  streamQueueChannel: "Canal",
+  streamQueueEmpty: "No hay streams configurados ni partidas en cola para este torneo.",
+  streamQueueMatchPlural: "{count} partidas en cola",
+  streamQueueMatchSingular: "1 partida en cola",
+  streamQueueNoSetsForStream: "No hay partidas asignadas actualmente a este stream.",
+  streamQueueRefresh: "Actualizar cola de stream",
+  streamQueueSendToScoreboard: "Poner en marcador",
+  streamQueueSetsCount: "{count} partidas",
+  streamQueueSubtitle: "Asignación de partidas en vivo por canales de transmisión",
+  streamQueueTitle: "Cola de Stream",
+
+  // =============================================================================
   // TOURNAMENT HUB
   // =============================================================================
   tournamentBtnBack: "Atrás",
@@ -432,3 +449,4 @@ export default {
   tournamentStepPinFinish: "2. Fijar Torneo y Finalizar",
   tournamentStepPlayersImported: "1. Jugadores Importados",
 };
+

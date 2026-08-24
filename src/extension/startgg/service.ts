@@ -5,7 +5,7 @@ import {
 } from './api.js';
 import { globalRequestCache, SimpleLRUCache } from '../util/request-cache.js';
 import { startggParticipantEntrantMapReplicant } from '../util/replicants.js';
-import type { ImportedPlayer, BracketSet } from '../util/types.js';
+import type { ImportedPlayer, BracketSet, StreamQueueItem } from '../util/types.js';
 import type {
   StartGGRecentTournamentsResponse,
   StartGGTournamentParticipantsResponse,
@@ -16,8 +16,11 @@ import type {
   StartGGReportSetResponse,
   StartGGParticipantNode,
   StartGGSetNode,
+  StartGGStreamQueueResponse,
+  StartGGStreamQueueNode,
+  StartGGStreamNode,
 } from './types.js';
-import { transformParticipantNode, transformSetNode } from './transformers.js';
+import { transformParticipantNode, transformSetNode, transformStreamQueueSetNode } from './transformers.js';
 import {
   RECENT_TOURNAMENTS_QUERY,
   TOURNAMENT_PARTICIPANTS_QUERY,
@@ -27,6 +30,7 @@ import {
   GROUP_SETS_QUERY,
   GET_SET_FOR_REPORT_QUERY,
   REPORT_SET_MUTATION,
+  STREAM_QUEUE_QUERY,
 } from './queries.js';
 
 const MAX_CACHE_SIZE = 1000;
@@ -228,4 +232,21 @@ export async function reportSet(setId: string, winnerParticipantId: string, scor
 
   globalRequestCache.invalidate('startgg:sets:');
   return { success: true };
+}
+
+export async function fetchStreamQueue(slug: string, token: string): Promise<StreamQueueItem[]> {
+  return globalRequestCache.wrap(`startgg:streamqueue:${slug}`, 30 * 1000, async () => {
+    const data = await requestStartGG<StartGGStreamQueueResponse>(STREAM_QUEUE_QUERY, { slug }, token);
+    const queue = data.tournament?.streamQueue ?? [];
+    return queue
+      .filter((item): item is StartGGStreamQueueNode & { stream: StartGGStreamNode } => item.stream !== null && item.stream !== undefined)
+      .map(item => ({
+        stream: {
+          id: String(item.stream.id),
+          streamName: item.stream.streamName,
+          streamSource: item.stream.streamSource,
+        },
+        sets: (item.sets ?? []).map(transformStreamQueueSetNode),
+      }));
+  });
 }

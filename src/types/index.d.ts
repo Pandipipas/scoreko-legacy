@@ -68,6 +68,24 @@ export interface BracketPlayer {
   score?: number | string | null;
 }
 
+export interface StreamQueueItem {
+  stream: {
+    id: string;
+    streamName: string;
+    streamSource: string;
+  };
+  sets: StreamQueueSet[];
+}
+
+export interface StreamQueueSet {
+  id: string;
+  fullRoundText: string;
+  identifier: string;
+  event: { id: string; name: string };
+  player1: BracketPlayer | null;
+  player2: BracketPlayer | null;
+}
+
 export interface PackCharacter {
   name: string;
   slug: string;

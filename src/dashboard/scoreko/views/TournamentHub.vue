@@ -7,6 +7,7 @@ import { TEMP_FALLBACK_DURATION_SECONDS, LS_KEYS } from '../../../shared/constan
 import challongeIcoUrl from '../assets/challonge.ico';
 import startggSvgUrl from '../assets/startgg.svg';
 import BracketMatchCard from '../components/BracketMatchCard.vue';
+import TournamentStreamQueueTab from '../components/TournamentStreamQueueTab.vue';
 import { useIntegration } from '../composables/useIntegration';
 import { useBracketStore } from '../stores/bracket';
 import { usePlayersStore } from '../stores/players';
@@ -238,6 +239,19 @@ const adminWarning = computed(() => {
 const showOnlyPlayable = ref(true);
 const hideCompleted = ref(false);
 const viewMode = ref<'grid' | 'bracket'>('grid');
+const activeHubTab = ref<'bracket' | 'streamQueue'>('bracket');
+
+watch(() => bracketStore.provider, (newProvider) => {
+  if (newProvider !== 'startgg' && activeHubTab.value === 'streamQueue') {
+    activeHubTab.value = 'bracket';
+  }
+});
+
+watch(activeHubTab, (newTab) => {
+  if (newTab === 'streamQueue' && bracketStore.provider === 'startgg') {
+    bracketStore.fetchStartggStreamQueue();
+  }
+});
 
 const filteredMatches = computed(() => {
   let matches = bracketStore.matches;
@@ -772,236 +786,299 @@ const onPinAndFinish = () => {
         class="glass-panel matches-card full-width dashboard-stagger-1"
       >
         <QCardSection>
-          <div class="row items-center justify-between panel-header q-mb-md">
-            <div class="row items-center">
-              <div class="text-h6 row items-center">
-                {{ hasPinnedTournament ? pinnedTournamentName : t('bracketMatches') }}
-                <QIcon
-                  v-if="viewMode === 'bracket' && hasPinnedTournament"
-                  name="pan_tool"
-                  color="grey-5"
-                  size="sm"
+          <!-- STREAM QUEUE VIEW -->
+          <template v-if="activeHubTab === 'streamQueue'">
+            <div class="row items-center justify-between panel-header q-mb-md">
+              <div class="row items-center">
+                <div class="text-h6 row items-center">
+                  {{ hasPinnedTournament ? pinnedTournamentName : t('bracketMatches') }}
+                </div>
+                <QBtn
+                  v-if="hasPinnedTournament"
+                  outline
+                  no-caps
+                  color="primary"
+                  icon="settings"
+                  label="Change"
+                  class="q-ml-md"
+                  @click="isSetupDialogOpen = true"
+                />
+                <QBtn
+                  v-if="hasPinnedTournament"
+                  flat
+                  no-caps
+                  color="negative"
+                  icon="close"
+                  label="Detach"
                   class="q-ml-sm"
+                  @click="bracketStore.detachTournament()"
+                />
+                <QBtn
+                  unelevated
+                  no-caps
+                  color="primary"
+                  icon="account_tree"
+                  :label="t('bracketMatches')"
+                  class="q-ml-md"
+                  @click="activeHubTab = 'bracket'"
+                />
+              </div>
+            </div>
+            <TournamentStreamQueueTab />
+          </template>
+
+          <!-- BRACKET MATCHES VIEW -->
+          <template v-else>
+            <div class="row items-center justify-between panel-header q-mb-md">
+              <div class="row items-center">
+                <div class="text-h6 row items-center">
+                  {{ hasPinnedTournament ? pinnedTournamentName : t('bracketMatches') }}
+                  <QIcon
+                    v-if="viewMode === 'bracket' && hasPinnedTournament"
+                    name="pan_tool"
+                    color="grey-5"
+                    size="sm"
+                    class="q-ml-sm"
+                  >
+                    <QTooltip class="glass-tooltip">
+                      {{ t('tooltipDragToScroll') }}
+                    </QTooltip>
+                  </QIcon>
+                </div>
+                <QBtn
+                  v-if="hasPinnedTournament"
+                  outline
+                  no-caps
+                  color="primary"
+                  icon="settings"
+                  label="Change"
+                  class="q-ml-md"
+                  @click="isSetupDialogOpen = true"
+                />
+                <QBtn
+                  v-if="hasPinnedTournament"
+                  flat
+                  no-caps
+                  color="negative"
+                  icon="close"
+                  label="Detach"
+                  class="q-ml-sm"
+                  @click="bracketStore.detachTournament()"
+                />
+                <QBtn
+                  v-if="bracketStore.provider === 'startgg' && hasPinnedTournament"
+                  outline
+                  no-caps
+                  color="primary"
+                  icon="live_tv"
+                  :label="t('streamQueueTitle')"
+                  class="q-ml-md"
+                  @click="activeHubTab = 'streamQueue'"
+                >
+                  <QBadge
+                    v-if="bracketStore.streamQueue.length > 0"
+                    color="primary"
+                    rounded
+                    class="q-ml-xs"
+                  >
+                    {{ bracketStore.streamQueue.reduce((acc, i) => acc + (i.sets?.length || 0), 0) }}
+                  </QBadge>
+                </QBtn>
+              </div>
+              
+              <div class="row items-center q-gutter-md">
+                <QBtnToggle
+                  v-model="viewMode"
+                  dense
+                  outline
+                  toggle-color="primary"
+                  color="grey-8"
+                  text-color="grey-5"
+                  :options="[
+                    { icon: 'grid_view', value: 'grid' },
+                    { icon: 'account_tree', value: 'bracket' }
+                  ]"
+                />
+                <QToggle
+                  v-model="showOnlyPlayable"
+                  :label="t('bracketPlayableOnly')"
+                  dense
+                  color="primary"
+                />
+                <QToggle
+                  v-model="hideCompleted"
+                  :label="t('bracketHideCompleted')"
+                  dense
+                  color="primary"
+                />
+                <QBtn 
+                  v-if="bracketStore.provider === 'startgg' && bracketStore.startggGroupId" 
+                  icon="refresh" 
+                  flat 
+                  round 
+                  dense 
+                  class="subtle-action-btn"
+                  @click="bracketStore.fetchStartggSets(bracketStore.startggGroupId)" 
                 >
                   <QTooltip class="glass-tooltip">
-                    {{ t('tooltipDragToScroll') }}
+                    {{ t('tooltipRefreshMatches') }}
                   </QTooltip>
-                </QIcon>
+                </QBtn>
+                <QBtn 
+                  v-if="bracketStore.provider === 'challonge' && challonge.selectedTournamentSlug" 
+                  icon="refresh" 
+                  flat 
+                  round 
+                  dense 
+                  class="subtle-action-btn"
+                  @click="bracketStore.fetchChallongeMatches(challonge.selectedTournamentSlug)" 
+                >
+                  <QTooltip class="glass-tooltip">
+                    {{ t('tooltipRefreshMatches') }}
+                  </QTooltip>
+                </QBtn>
+              </div>
+            </div>
+          
+            <div 
+              v-if="!hasPinnedTournament" 
+              class="column items-center justify-center q-py-xl"
+              style="width: 100%"
+            >
+              <QIcon
+                name="account_tree"
+                size="64px"
+                color="grey-8"
+                class="q-mb-md"
+              />
+              <div class="text-h6 text-grey-5 q-mb-md">
+                No tournament pinned
               </div>
               <QBtn
-                v-if="hasPinnedTournament"
-                outline
+                unelevated
                 no-caps
                 color="primary"
-                icon="settings"
-                label="Change"
-                class="q-ml-md"
+                icon="add"
+                label="Setup Tournament"
+                class="primary-action-btn"
                 @click="isSetupDialogOpen = true"
               />
-              <QBtn
-                v-if="hasPinnedTournament"
-                flat
-                no-caps
-                color="negative"
-                icon="close"
-                label="Detach"
-                class="q-ml-sm"
-                @click="bracketStore.detachTournament()"
-              />
             </div>
-            
-            <div class="row items-center q-gutter-md">
-              <QBtnToggle
-                v-model="viewMode"
-                dense
-                outline
-                toggle-color="primary"
-                color="grey-8"
-                text-color="grey-5"
-                :options="[
-                  { icon: 'grid_view', value: 'grid' },
-                  { icon: 'account_tree', value: 'bracket' }
-                ]"
-              />
-              <QToggle
-                v-model="showOnlyPlayable"
-                :label="t('bracketPlayableOnly')"
-                dense
-                color="primary"
-              />
-              <QToggle
-                v-model="hideCompleted"
-                :label="t('bracketHideCompleted')"
-                dense
-                color="primary"
-              />
-              <QBtn 
-                v-if="bracketStore.provider === 'startgg' && bracketStore.startggGroupId" 
-                icon="refresh" 
-                flat 
-                round 
-                dense 
-                class="subtle-action-btn"
-                @click="bracketStore.fetchStartggSets(bracketStore.startggGroupId)" 
-              >
-                <QTooltip class="glass-tooltip">
-                  {{ t('tooltipRefreshMatches') }}
-                </QTooltip>
-              </QBtn>
-              <QBtn 
-                v-if="bracketStore.provider === 'challonge' && challonge.selectedTournamentSlug" 
-                icon="refresh" 
-                flat 
-                round 
-                dense 
-                class="subtle-action-btn"
-                @click="bracketStore.fetchChallongeMatches(challonge.selectedTournamentSlug)" 
-              >
-                <QTooltip class="glass-tooltip">
-                  {{ t('tooltipRefreshMatches') }}
-                </QTooltip>
-              </QBtn>
-            </div>
-          </div>
-          
-          <div 
-            v-if="!hasPinnedTournament" 
-            class="column items-center justify-center q-py-xl"
-            style="width: 100%"
-          >
-            <QIcon
-              name="account_tree"
-              size="64px"
-              color="grey-8"
-              class="q-mb-md"
-            />
-            <div class="text-h6 text-grey-5 q-mb-md">
-              No tournament pinned
-            </div>
-            <QBtn
-              unelevated
-              no-caps
-              color="primary"
-              icon="add"
-              label="Setup Tournament"
-              class="primary-action-btn"
-              @click="isSetupDialogOpen = true"
-            />
-          </div>
-          <div 
-            v-if="bracketStore.loading" 
-            class="row justify-center q-pa-xl"
-          >
-            <QSpinner 
-              color="primary" 
-              size="3em" 
-            />
-          </div>
-            
-          <div 
-            v-else-if="!bracketStore.matches.length" 
-            class="text-grey-6 q-pa-md text-center"
-          >
-            {{ t('bracketNoActiveMatches') }}
-          </div>
-
-            
-          <div 
-            v-if="viewMode === 'grid'" 
-            class="match-grid-container q-mt-sm"
-          >
             <div 
-              v-for="match in gridMatches" 
-              :key="match.id" 
-              class="match-grid-wrapper"
+              v-if="bracketStore.loading" 
+              class="row justify-center q-pa-xl"
             >
-              <BracketMatchCard :match="match" />
+              <QSpinner 
+                color="primary" 
+                size="3em" 
+              />
             </div>
-          </div>
+            
+            <div 
+              v-else-if="!bracketStore.matches.length" 
+              class="text-grey-6 q-pa-md text-center"
+            >
+              {{ t('bracketNoActiveMatches') }}
+            </div>
 
             
-          <div
-            v-else-if="viewMode === 'bracket'"
-            ref="bracketScrollContainer"
-            class="bracket-view-container q-mt-sm overflow-auto"
-            style="cursor: grab;"
-            @mousedown="onBracketDragStart"
-            @mousemove="onBracketDragMove"
-            @mouseup="onBracketDragEnd"
-            @mouseleave="onBracketDragEnd"
-          >
-            <div
-              v-if="winnersMatchesByRound.length"
-              class="bracket-tier q-mb-xl"
+            <div 
+              v-if="viewMode === 'grid'" 
+              class="match-grid-container q-mt-sm"
             >
-              <div class="text-subtitle1 text-weight-bold text-primary q-mb-sm">
-                {{ t('bracketWinnersBracket') }}
-              </div>
-              <div class="row no-wrap bracket-row">
-                <div
-                  v-for="(col, colIndex) in winnersMatchesByRound"
-                  :key="col.round"
-                  class="bracket-column column"
-                >
-                  <div class="text-subtitle2 text-center text-grey-6">
-                    {{ col.matches[0]?.fullRoundText }}
-                  </div>
-                  <div 
-                    v-for="(match, index) in col.matches" 
-                    :key="match.id" 
-                    class="match-grid-wrapper"
-                    :class="{
-                      'connect-halve-top': (winnersMatchesByRound[colIndex + 1]?.matches.length ?? -1) === col.matches.length / 2 && index % 2 === 0,
-                      'connect-halve-bottom': (winnersMatchesByRound[colIndex + 1]?.matches.length ?? -1) === col.matches.length / 2 && index % 2 !== 0,
-                      'connect-straight': (winnersMatchesByRound[colIndex + 1]?.matches.length ?? -1) === col.matches.length,
-                      'connect-left': colIndex > 0
-                    }"
-                  >
-                    <BracketMatchCard
-                      :match="match"
-                      variant="bracket"
-                    />
-                  </div>
-                </div>
+              <div 
+                v-for="match in gridMatches" 
+                :key="match.id" 
+                class="match-grid-wrapper"
+              >
+                <BracketMatchCard :match="match" />
               </div>
             </div>
 
+            
             <div
-              v-if="losersMatchesByRound.length"
-              class="bracket-tier"
+              v-else-if="viewMode === 'bracket'"
+              ref="bracketScrollContainer"
+              class="bracket-view-container q-mt-sm overflow-auto"
+              style="cursor: grab;"
+              @mousedown="onBracketDragStart"
+              @mousemove="onBracketDragMove"
+              @mouseup="onBracketDragEnd"
+              @mouseleave="onBracketDragEnd"
             >
-              <div class="text-subtitle1 text-weight-bold text-orange q-mb-sm">
-                {{ t('bracketLosersBracket') }}
-              </div>
-              <div class="row no-wrap bracket-row">
-                <div
-                  v-for="(col, colIndex) in losersMatchesByRound"
-                  :key="col.round"
-                  class="bracket-column column"
-                >
-                  <div class="text-subtitle2 text-center text-grey-6">
-                    {{ col.matches[0]?.fullRoundText }}
-                  </div>
-                  <div 
-                    v-for="(match, index) in col.matches" 
-                    :key="match.id" 
-                    class="match-grid-wrapper"
-                    :class="{
-                      'connect-halve-top': (losersMatchesByRound[colIndex + 1]?.matches.length ?? -1) === col.matches.length / 2 && index % 2 === 0,
-                      'connect-halve-bottom': (losersMatchesByRound[colIndex + 1]?.matches.length ?? -1) === col.matches.length / 2 && index % 2 !== 0,
-                      'connect-straight': (losersMatchesByRound[colIndex + 1]?.matches.length ?? -1) === col.matches.length,
-                      'connect-left': colIndex > 0
-                    }"
+              <div
+                v-if="winnersMatchesByRound.length"
+                class="bracket-tier q-mb-xl"
+              >
+                <div class="text-subtitle1 text-weight-bold text-primary q-mb-sm">
+                  {{ t('bracketWinnersBracket') }}
+                </div>
+                <div class="row no-wrap bracket-row">
+                  <div
+                    v-for="(col, colIndex) in winnersMatchesByRound"
+                    :key="col.round"
+                    class="bracket-column column"
                   >
-                    <BracketMatchCard
-                      :match="match"
-                      variant="bracket"
-                    />
+                    <div class="text-subtitle2 text-center text-grey-6">
+                      {{ col.matches[0]?.fullRoundText }}
+                    </div>
+                    <div 
+                      v-for="(match, index) in col.matches" 
+                      :key="match.id" 
+                      class="match-grid-wrapper"
+                      :class="{
+                        'connect-halve-top': (winnersMatchesByRound[colIndex + 1]?.matches.length ?? -1) === col.matches.length / 2 && index % 2 === 0,
+                        'connect-halve-bottom': (winnersMatchesByRound[colIndex + 1]?.matches.length ?? -1) === col.matches.length / 2 && index % 2 !== 0,
+                        'connect-straight': (winnersMatchesByRound[colIndex + 1]?.matches.length ?? -1) === col.matches.length,
+                        'connect-left': colIndex > 0
+                      }"
+                    >
+                      <BracketMatchCard
+                        :match="match"
+                        variant="bracket"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                v-if="losersMatchesByRound.length"
+                class="bracket-tier"
+              >
+                <div class="text-subtitle1 text-weight-bold text-orange q-mb-sm">
+                  {{ t('bracketLosersBracket') }}
+                </div>
+                <div class="row no-wrap bracket-row">
+                  <div
+                    v-for="(col, colIndex) in losersMatchesByRound"
+                    :key="col.round"
+                    class="bracket-column column"
+                  >
+                    <div class="text-subtitle2 text-center text-grey-6">
+                      {{ col.matches[0]?.fullRoundText }}
+                    </div>
+                    <div 
+                      v-for="(match, index) in col.matches" 
+                      :key="match.id" 
+                      class="match-grid-wrapper"
+                      :class="{
+                        'connect-halve-top': (losersMatchesByRound[colIndex + 1]?.matches.length ?? -1) === col.matches.length / 2 && index % 2 === 0,
+                        'connect-halve-bottom': (losersMatchesByRound[colIndex + 1]?.matches.length ?? -1) === col.matches.length / 2 && index % 2 !== 0,
+                        'connect-straight': (losersMatchesByRound[colIndex + 1]?.matches.length ?? -1) === col.matches.length,
+                        'connect-left': colIndex > 0
+                      }"
+                    >
+                      <BracketMatchCard
+                        :match="match"
+                        variant="bracket"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          </template>
         </QCardSection>
       </QCard>
     </div>

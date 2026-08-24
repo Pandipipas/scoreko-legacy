@@ -136,3 +136,46 @@ export const REPORT_SET_MUTATION = `
     }
   }
 `;
+
+export const STREAM_QUEUE_QUERY = `
+  query TournamentStreamQueue($slug: String!) {
+    tournament(slug: $slug) {
+      streamQueue {
+        stream {
+          id
+          streamName
+          streamSource
+        }
+        sets {
+          id
+          fullRoundText
+          identifier
+          round
+          state
+          event {
+            id
+            name
+          }
+          slots {
+            entrant {
+              id
+              participants {
+                id
+                gamerTag
+                prefix
+              }
+            }
+            standing {
+              stats {
+                score {
+                  value
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+

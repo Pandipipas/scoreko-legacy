@@ -8,4 +8,6 @@ export type {
   BracketPhaseGroup,
   BracketSet,
   BracketPlayer,
+  StreamQueueItem,
+  StreamQueueSet,
 } from '../../types/index.js';
