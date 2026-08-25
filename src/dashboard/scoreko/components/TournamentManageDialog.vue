@@ -11,6 +11,7 @@ defineOptions({ name: 'TournamentManageDialog' });
 const props = defineProps<{
   modelValue: boolean;
   slug: string;
+  name?: string;
 }>();
 
 const emit = defineEmits<{
@@ -21,7 +22,7 @@ const $q = useQuasar();
 const bracketStore = useBracketStore();
 const playersStore = usePlayersStore();
 
-const activeTab = ref<'lifecycle' | 'participants' | 'bulkAdd'>('lifecycle');
+const activeTab = ref<'status' | 'participants' | 'bulkAdd'>('status');
 
 const isDialogOpen = computed({
   get: () => props.modelValue,
@@ -30,6 +31,10 @@ const isDialogOpen = computed({
 
 const effectiveSlug = computed(() => {
   return props.slug || bracketStore.challongeTournamentSlug || bracketStore.attached.tournamentSlug || '';
+});
+
+const effectiveName = computed(() => {
+  return props.name || effectiveSlug.value;
 });
 
 const participants = ref<ImportedPlayer[]>([]);
@@ -69,7 +74,7 @@ const loadParticipants = async () => {
 
 watch(() => props.modelValue, (isOpen) => {
   if (isOpen) {
-    activeTab.value = 'lifecycle';
+    activeTab.value = 'status';
     loadParticipants();
   }
 });
@@ -291,7 +296,7 @@ const sortedParticipants = computed(() => {
           />
           <div>
             <div class="text-h6 text-weight-bold text-base leading-tight">
-              {{ t('challongeManageTitle') }}
+              {{ effectiveName }}
             </div>
             <div class="text-caption text-muted">
               {{ effectiveSlug }}
@@ -320,9 +325,9 @@ const sortedParticipants = computed(() => {
         dense
       >
         <QTab
-          name="lifecycle"
-          :label="t('challongeTabLifecycle')"
-          icon="play_circle"
+          name="status"
+          :label="t('challongeTabStatus')"
+          icon="tune"
           no-caps
         />
         <QTab
@@ -356,25 +361,25 @@ const sortedParticipants = computed(() => {
         animated
         class="bg-transparent tab-panels-fixed"
       >
-        <!-- TAB 1: LIFECYCLE -->
+        <!-- TAB 1: STATUS -->
         <QTabPanel
-          name="lifecycle"
+          name="status"
           class="q-pa-md"
         >
           <div class="column q-gutter-y-md manage-tab-content">
             <div class="text-caption text-muted">
-              {{ t('challongeLifecycleSubtitle') }}
+              {{ t('challongeStatusSubtitle') }}
             </div>
 
             <div class="column q-gutter-y-sm">
               <!-- START TOURNAMENT CARD -->
               <div
-                class="lifecycle-card row items-center no-wrap justify-between q-pa-md cursor-pointer start-card"
+                class="status-action-card row items-center no-wrap justify-between q-pa-md cursor-pointer"
                 :class="{ 'card-disabled': isChangingState }"
                 @click="confirmChangeState('start')"
               >
                 <div class="row items-center no-wrap q-gutter-x-md col">
-                  <div class="icon-avatar start-avatar row items-center justify-center">
+                  <div class="icon-avatar primary-avatar row items-center justify-center">
                     <QIcon
                       name="play_arrow"
                       size="24px"
@@ -384,20 +389,21 @@ const sortedParticipants = computed(() => {
                     <div class="text-subtitle2 text-weight-bold text-base">
                       {{ t('challongeBtnStartTournament') }}
                     </div>
-                    <div class="text-caption text-muted lifecycle-desc">
+                    <div class="text-caption text-muted action-desc">
                       {{ t('challongeDescStartTournament') }}
                     </div>
                   </div>
                 </div>
                 <div class="col-auto q-ml-md">
                   <QBtn
-                    flat
+                    unelevated
                     dense
                     no-caps
+                    color="primary"
                     icon="play_arrow"
                     :label="t('challongeBtnStartTournament')"
                     :loading="isChangingState"
-                    class="lifecycle-btn lifecycle-btn-start"
+                    class="primary-action-btn card-action-btn"
                     @click.stop="confirmChangeState('start')"
                   />
                 </div>
@@ -405,12 +411,12 @@ const sortedParticipants = computed(() => {
 
               <!-- FINALIZE TOURNAMENT CARD -->
               <div
-                class="lifecycle-card row items-center no-wrap justify-between q-pa-md cursor-pointer finalize-card"
+                class="status-action-card row items-center no-wrap justify-between q-pa-md cursor-pointer"
                 :class="{ 'card-disabled': isChangingState }"
                 @click="confirmChangeState('finalize')"
               >
                 <div class="row items-center no-wrap q-gutter-x-md col">
-                  <div class="icon-avatar finalize-avatar row items-center justify-center">
+                  <div class="icon-avatar secondary-avatar row items-center justify-center">
                     <QIcon
                       name="emoji_events"
                       size="24px"
@@ -420,20 +426,21 @@ const sortedParticipants = computed(() => {
                     <div class="text-subtitle2 text-weight-bold text-base">
                       {{ t('challongeBtnFinalizeTournament') }}
                     </div>
-                    <div class="text-caption text-muted lifecycle-desc">
+                    <div class="text-caption text-muted action-desc">
                       {{ t('challongeDescFinalizeTournament') }}
                     </div>
                   </div>
                 </div>
                 <div class="col-auto q-ml-md">
                   <QBtn
-                    flat
+                    outline
                     dense
                     no-caps
+                    color="secondary"
                     icon="emoji_events"
                     :label="t('challongeBtnFinalizeTournament')"
                     :loading="isChangingState"
-                    class="lifecycle-btn lifecycle-btn-finalize"
+                    class="card-action-btn"
                     @click.stop="confirmChangeState('finalize')"
                   />
                 </div>
@@ -441,12 +448,12 @@ const sortedParticipants = computed(() => {
 
               <!-- RESET TOURNAMENT CARD -->
               <div
-                class="lifecycle-card row items-center no-wrap justify-between q-pa-md cursor-pointer reset-card"
+                class="status-action-card row items-center no-wrap justify-between q-pa-md cursor-pointer"
                 :class="{ 'card-disabled': isChangingState }"
                 @click="confirmChangeState('reset')"
               >
                 <div class="row items-center no-wrap q-gutter-x-md col">
-                  <div class="icon-avatar reset-avatar row items-center justify-center">
+                  <div class="icon-avatar danger-avatar row items-center justify-center">
                     <QIcon
                       name="replay"
                       size="24px"
@@ -456,20 +463,21 @@ const sortedParticipants = computed(() => {
                     <div class="text-subtitle2 text-weight-bold text-base">
                       {{ t('challongeBtnResetTournament') }}
                     </div>
-                    <div class="text-caption text-muted lifecycle-desc">
+                    <div class="text-caption text-muted action-desc">
                       {{ t('challongeDescResetTournament') }}
                     </div>
                   </div>
                 </div>
                 <div class="col-auto q-ml-md">
                   <QBtn
-                    flat
+                    outline
                     dense
                     no-caps
+                    color="negative"
                     icon="replay"
                     :label="t('challongeBtnResetTournament')"
                     :loading="isChangingState"
-                    class="lifecycle-btn lifecycle-btn-reset"
+                    class="card-action-btn"
                     @click.stop="confirmChangeState('reset')"
                   />
                 </div>
@@ -531,14 +539,14 @@ const sortedParticipants = computed(() => {
               </div>
               <div class="row items-center q-gutter-x-xs no-wrap">
                 <QBtn
-                  flat
+                  outline
                   dense
                   no-caps
                   size="sm"
                   color="primary"
                   icon="shuffle"
                   :label="t('challongeBtnRandomize')"
-                  class="subtle-action-btn no-wrap"
+                  class="no-wrap q-px-sm"
                   :loading="isRandomizing"
                   :disable="participants.length < 2"
                   @click="confirmRandomizeSeeds"
@@ -722,7 +730,7 @@ const sortedParticipants = computed(() => {
   width: 100%;
 }
 
-.lifecycle-card {
+.status-action-card {
   border-radius: 6px;
   background: var(--bg-subtle);
   border: 1px solid var(--border-subtle);
@@ -730,19 +738,8 @@ const sortedParticipants = computed(() => {
   min-height: 68px;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.08);
-  }
-
-  &.start-card:hover {
-    border-color: rgba(33, 186, 69, 0.4);
-  }
-
-  &.finalize-card:hover {
-    border-color: rgba(242, 192, 55, 0.4);
-  }
-
-  &.reset-card:hover {
-    border-color: rgba(239, 68, 68, 0.4);
+    border-color: var(--border-medium);
+    background: rgba(255, 255, 255, 0.07);
   }
 
   &.card-disabled {
@@ -757,69 +754,36 @@ const sortedParticipants = computed(() => {
   border-radius: 8px;
   flex-shrink: 0;
 
-  &.start-avatar {
-    background: rgba(33, 186, 69, 0.15);
-    color: #4ade80;
+  &.primary-avatar {
+    background: rgba(230, 107, 60, 0.12);
+    color: var(--q-primary);
+    border: 1px solid rgba(230, 107, 60, 0.25);
   }
 
-  &.finalize-avatar {
-    background: rgba(242, 192, 55, 0.15);
-    color: #facc15;
+  &.secondary-avatar {
+    background: rgba(244, 162, 97, 0.12);
+    color: var(--q-secondary);
+    border: 1px solid rgba(244, 162, 97, 0.25);
   }
 
-  &.reset-avatar {
-    background: rgba(239, 68, 68, 0.15);
-    color: #f87171;
+  &.danger-avatar {
+    background: rgba(244, 67, 54, 0.1);
+    color: var(--q-negative);
+    border: 1px solid rgba(244, 67, 54, 0.25);
   }
 }
 
-.lifecycle-desc {
+.action-desc {
   line-height: 1.3;
 }
 
-.lifecycle-btn {
+.card-action-btn {
   font-weight: 600;
   font-size: 0.85rem;
-  padding: 6px 14px;
+  padding: 6px 16px;
   border-radius: 6px;
   transition: all 0.2s ease;
   white-space: nowrap;
-
-  &.lifecycle-btn-start {
-    background: rgba(33, 186, 69, 0.15) !important;
-    border: 1px solid rgba(33, 186, 69, 0.4) !important;
-    color: #4ade80 !important;
-
-    &:hover {
-      background: rgba(33, 186, 69, 0.28) !important;
-      border-color: rgba(33, 186, 69, 0.65) !important;
-      box-shadow: 0 0 12px rgba(33, 186, 69, 0.25);
-    }
-  }
-
-  &.lifecycle-btn-finalize {
-    background: rgba(242, 192, 55, 0.15) !important;
-    border: 1px solid rgba(242, 192, 55, 0.4) !important;
-    color: #facc15 !important;
-
-    &:hover {
-      background: rgba(242, 192, 55, 0.28) !important;
-      border-color: rgba(242, 192, 55, 0.65) !important;
-      box-shadow: 0 0 12px rgba(242, 192, 55, 0.25);
-    }
-  }
-
-  &.lifecycle-btn-reset {
-    background: rgba(239, 68, 68, 0.15) !important;
-    border: 1px solid rgba(239, 68, 68, 0.4) !important;
-    color: #f87171 !important;
-
-    &:hover {
-      background: rgba(239, 68, 68, 0.28) !important;
-      border-color: rgba(239, 68, 68, 0.65) !important;
-      box-shadow: 0 0 12px rgba(239, 68, 68, 0.25);
-    }
-  }
 
   &:active {
     transform: scale(0.96);

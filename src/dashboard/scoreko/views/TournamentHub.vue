@@ -450,6 +450,7 @@ const onPinAndFinish = () => {
       <TournamentManageDialog
         v-model="isManageDialogOpen"
         :slug="bracketStore.challongeTournamentSlug || bracketStore.attached.tournamentSlug || ''"
+        :name="pinnedTournamentName"
       />
 
       <!-- TOURNAMENT SETUP MODAL -->
@@ -1070,12 +1071,12 @@ const onPinAndFinish = () => {
                 />
                 <QBtn
                   v-if="hasPinnedTournament"
-                  flat
+                  outline
                   no-caps
                   color="negative"
                   icon="link_off"
                   :label="t('tournamentBtnDetach')"
-                  class="subtle-action-btn q-ml-sm"
+                  class="q-ml-sm"
                   @click="bracketStore.detachTournament()"
                 />
                 <QBtn
@@ -1142,12 +1143,12 @@ const onPinAndFinish = () => {
                 />
                 <QBtn
                   v-if="hasPinnedTournament"
-                  flat
+                  outline
                   no-caps
                   color="negative"
                   icon="link_off"
                   :label="t('tournamentBtnDetach')"
-                  class="subtle-action-btn q-ml-sm"
+                  class="q-ml-sm"
                   @click="bracketStore.detachTournament()"
                 />
                 <QBtn
