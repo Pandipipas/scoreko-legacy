@@ -5,14 +5,28 @@ import { oauthServer, getOAuthMode } from './oauth.js';
 import { tokenStore } from '../util/token-store.js';
 import { normalizeTournamentSlug } from './api.js';
 import { getStringProp, sendAck } from '../util/helpers.js';
+import type {
+  CreateTournamentParams,
+  TournamentStateAction,
+  BulkParticipantInput,
+} from '../util/types.js';
 import {
   fetchRecentTournaments,
   fetchTournamentPlayers,
   fetchMatches,
   reportMatch,
+  changeMatchState,
+  createTournament,
+  changeTournamentState,
+  createParticipant,
+  bulkCreateParticipants,
+  randomizeParticipants,
+  deleteParticipant,
 } from './service.js';
 
+
 export function setupHandlers() {
+
   nodecg.listenFor('challonge:createOAuthSession', createHandler({
     handler: async (_payload: unknown, ack) => {
       const mode = getOAuthMode();
@@ -149,6 +163,141 @@ export function setupHandlers() {
         sendAck(ack, null, result);
       } catch (error) {
         sendAck(ack, error instanceof Error ? error.message : 'Unknown error while reporting match');
+      }
+    }
+  }));
+
+  nodecg.listenFor('challonge:changeMatchState', createHandler({
+    requiresToken: 'challonge',
+    handler: async (payload: unknown, ack, { token }) => {
+      const slug = normalizeTournamentSlug(getStringProp(payload, 'slug'));
+      const matchId = String((payload as Record<string, unknown>).matchId ?? '').trim();
+      const action = String((payload as Record<string, unknown>).action ?? '').trim() as 'reopen' | 'mark_underway' | 'unmark_underway' | 'mark_as_underway' | 'unmark_as_underway';
+
+      if (!slug) { sendAck(ack, 'Missing tournament slug'); return; }
+      if (!matchId) { sendAck(ack, 'Missing match ID'); return; }
+      if (!['reopen', 'mark_underway', 'unmark_underway', 'mark_as_underway', 'unmark_as_underway'].includes(action)) {
+        sendAck(ack, 'Invalid match action');
+        return;
+      }
+
+      try {
+        const result = await changeMatchState(slug, matchId, action, token);
+        sendAck(ack, null, result);
+      } catch (error) {
+        sendAck(ack, error instanceof Error ? error.message : 'Unknown error while changing match state');
+      }
+    }
+  }));
+
+  nodecg.listenFor('challonge:createTournament', createHandler({
+    requiresToken: 'challonge',
+    handler: async (payload: unknown, ack, { token }) => {
+      const params = payload as CreateTournamentParams;
+      if (!params || typeof params.name !== 'string' || !params.name.trim()) {
+        sendAck(ack, 'Tournament name is required');
+        return;
+      }
+
+      try {
+        const tournament = await createTournament(params, token);
+        sendAck(ack, null, tournament);
+      } catch (error) {
+        sendAck(ack, error instanceof Error ? error.message : 'Unknown error while creating tournament');
+      }
+    }
+  }));
+
+  nodecg.listenFor('challonge:changeTournamentState', createHandler({
+    requiresToken: 'challonge',
+    handler: async (payload: unknown, ack, { token }) => {
+      const slug = normalizeTournamentSlug(getStringProp(payload, 'slug'));
+      const action = String((payload as Record<string, unknown>).action ?? '').trim() as TournamentStateAction;
+
+      if (!slug) { sendAck(ack, 'Missing tournament slug'); return; }
+      if (!['start', 'finalize', 'reset'].includes(action)) {
+        sendAck(ack, 'Invalid tournament state action');
+        return;
+      }
+
+      try {
+        const result = await changeTournamentState(slug, action, token);
+        sendAck(ack, null, result);
+      } catch (error) {
+        sendAck(ack, error instanceof Error ? error.message : 'Unknown error while changing tournament state');
+      }
+    }
+  }));
+
+  nodecg.listenFor('challonge:createParticipant', createHandler({
+    requiresToken: 'challonge',
+    handler: async (payload: unknown, ack, { token }) => {
+      const slug = normalizeTournamentSlug(getStringProp(payload, 'slug'));
+      const p = payload as Record<string, unknown>;
+      const name = String(p.name ?? '').trim();
+      const seed = typeof p.seed === 'number' && Number.isFinite(p.seed) ? p.seed : undefined;
+      const misc = typeof p.misc === 'string' ? p.misc.trim() : undefined;
+
+      if (!slug) { sendAck(ack, 'Missing tournament slug'); return; }
+      if (!name) { sendAck(ack, 'Participant name is required'); return; }
+
+      try {
+        const players = await createParticipant(slug, { name, seed, misc }, token);
+        sendAck(ack, null, players);
+      } catch (error) {
+        sendAck(ack, error instanceof Error ? error.message : 'Unknown error while creating participant');
+      }
+    }
+  }));
+
+  nodecg.listenFor('challonge:bulkCreateParticipants', createHandler({
+    requiresToken: 'challonge',
+    handler: async (payload: unknown, ack, { token }) => {
+      const slug = normalizeTournamentSlug(getStringProp(payload, 'slug'));
+      const p = payload as Record<string, unknown>;
+      const participants = (Array.isArray(p.participants) ? p.participants : []) as BulkParticipantInput[];
+
+      if (!slug) { sendAck(ack, 'Missing tournament slug'); return; }
+      if (!participants.length) { sendAck(ack, 'No participants provided'); return; }
+
+      try {
+        const players = await bulkCreateParticipants(slug, participants, token);
+        sendAck(ack, null, players);
+      } catch (error) {
+        sendAck(ack, error instanceof Error ? error.message : 'Unknown error while bulk adding participants');
+      }
+    }
+  }));
+
+  nodecg.listenFor('challonge:randomizeParticipants', createHandler({
+    requiresToken: 'challonge',
+    handler: async (payload: unknown, ack, { token }) => {
+      const slug = normalizeTournamentSlug(getStringProp(payload, 'slug'));
+      if (!slug) { sendAck(ack, 'Missing tournament slug'); return; }
+
+      try {
+        const players = await randomizeParticipants(slug, token);
+        sendAck(ack, null, players);
+      } catch (error) {
+        sendAck(ack, error instanceof Error ? error.message : 'Unknown error while randomizing seeds');
+      }
+    }
+  }));
+
+  nodecg.listenFor('challonge:deleteParticipant', createHandler({
+    requiresToken: 'challonge',
+    handler: async (payload: unknown, ack, { token }) => {
+      const slug = normalizeTournamentSlug(getStringProp(payload, 'slug'));
+      const participantId = String((payload as Record<string, unknown>).participantId ?? '').trim();
+
+      if (!slug) { sendAck(ack, 'Missing tournament slug'); return; }
+      if (!participantId) { sendAck(ack, 'Missing participant ID'); return; }
+
+      try {
+        const players = await deleteParticipant(slug, participantId, token);
+        sendAck(ack, null, players);
+      } catch (error) {
+        sendAck(ack, error instanceof Error ? error.message : 'Unknown error while deleting participant');
       }
     }
   }));

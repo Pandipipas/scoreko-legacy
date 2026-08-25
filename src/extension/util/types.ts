@@ -8,4 +8,12 @@ export type {
   BracketPhaseGroup,
   BracketSet,
   BracketPlayer,
+  StreamQueueItem,
+  StreamQueueSet,
+  BracketStanding,
+  CreateTournamentParams,
+  TournamentStateAction,
+  BulkParticipantInput,
 } from '../../types/index.js';
+
+

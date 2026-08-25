@@ -23,6 +23,15 @@ export interface ImportedPlayer {
   avatarUrl?: string;
   startggId?: string;
   challongeId?: string;
+  seed?: number;
+}
+
+export type TournamentStateAction = 'start' | 'finalize' | 'reset';
+
+export interface BulkParticipantInput {
+  name: string;
+  seed?: number;
+  misc?: string;
 }
 
 export interface OAuthTokenResponse {
@@ -68,6 +77,24 @@ export interface BracketPlayer {
   score?: number | string | null;
 }
 
+export interface StreamQueueItem {
+  stream: {
+    id: string;
+    streamName: string;
+    streamSource: string;
+  };
+  sets: StreamQueueSet[];
+}
+
+export interface StreamQueueSet {
+  id: string;
+  fullRoundText: string;
+  identifier: string;
+  event: { id: string; name: string };
+  player1: BracketPlayer | null;
+  player2: BracketPlayer | null;
+}
+
 export interface PackCharacter {
   name: string;
   slug: string;
@@ -85,4 +112,22 @@ export interface PackManifest {
   defaultPair?: { left: string; right: string };
   characters: PackCharacter[];
 }
+
+export interface BracketStanding {
+  placement: number;
+  entrantId: string;
+  entrantName: string;
+  isPlacementResolved?: boolean;
+}
+
+export interface CreateTournamentParams {
+  name: string;
+  url?: string;
+  tournamentType?: 'single elimination' | 'double elimination' | 'round robin' | 'swiss';
+  gameName?: string;
+  description?: string;
+  openSignup?: boolean;
+}
+
+
 

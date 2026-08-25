@@ -1,4 +1,4 @@
-import type { ChallongeErrorPayload, ImportedPlayer, RecentTournament } from './types.js';
+import type { ImportedPlayer, RecentTournament } from './types.js';
 import { resolveCountryCode } from '../util/helpers.js';
 import { RateLimiter } from '../util/rate-limiter.js';
 
@@ -17,10 +17,41 @@ const parseJsonResponse = async (response: Response): Promise<unknown> => {
   }
 };
 
+export const formatChallongeError = (payload: unknown, fallback: string): string => {
+  if (!payload || typeof payload !== 'object') return fallback;
+  const p = payload as Record<string, unknown>;
+
+  if (Array.isArray(p.errors)) {
+    const msgs = p.errors.map(err => {
+      if (typeof err === 'string') return err;
+      if (typeof err === 'object' && err !== null) {
+        const detail = (err as Record<string, unknown>).detail ?? (err as Record<string, unknown>).title;
+        if (typeof detail === 'string' && detail) return detail;
+      }
+      return '';
+    }).filter(Boolean);
+    if (msgs.length > 0) return msgs.join(', ');
+  }
+
+  if (typeof p.errors === 'object' && p.errors !== null) {
+    const detail = (p.errors as Record<string, unknown>).detail ?? (p.errors as Record<string, unknown>).title;
+    if (typeof detail === 'string' && detail) return detail;
+  }
+
+  if (typeof p.error === 'string' && p.error) {
+    return p.error;
+  }
+
+  if (typeof p.message === 'string' && p.message) {
+    return p.message;
+  }
+
+  return fallback;
+};
+
 export const requestChallonge = async (path: string, token: string, method: string = 'GET', body?: unknown | { v1: unknown; v2: unknown }): Promise<unknown> => {
   await rateLimiter.acquire();
   const requestUrl = `${CHALLONGE_API_BASE}${path}`;
-  
   
   const isApiKey = !token.includes('.');
 
@@ -28,13 +59,19 @@ export const requestChallonge = async (path: string, token: string, method: stri
     const v1Body = body && typeof body === 'object' && 'v1' in body ? (body as Record<string, unknown>).v1 : body;
     const v1RequestUrl = `https://api.challonge.com/v1${path}`;
     
+    const v1Headers: Record<string, string> = {
+      Accept: 'application/json',
+      Authorization: isApiKey
+        ? `Basic ${Buffer.from(`:${token}`).toString('base64')}`
+        : `Bearer ${token}`,
+    };
+    if (v1Body) {
+      v1Headers['Content-Type'] = 'application/json';
+    }
+
     const v1Response = await fetch(v1RequestUrl, {
       method,
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        Authorization: `Basic ${Buffer.from(`:${token}`).toString('base64')}`,
-      },
+      headers: v1Headers,
       body: v1Body ? JSON.stringify(v1Body) : undefined,
     });
     const v1Payload = await parseJsonResponse(v1Response);
@@ -47,12 +84,11 @@ export const requestChallonge = async (path: string, token: string, method: stri
       throw new Error('Invalid or expired Challonge API token');
     }
 
-    const v1Error = v1Payload as ChallongeErrorPayload;
-    throw new Error(
-      v1Error?.errors?.detail ??
-      v1Error?.error ??
+    const errorMsg = formatChallongeError(
+      v1Payload,
       `Challonge responded with ${v1Response.status} ${v1Response.statusText}`.trim(),
     );
+    throw new Error(errorMsg);
   };
 
   if (isApiKey) {
@@ -60,14 +96,18 @@ export const requestChallonge = async (path: string, token: string, method: stri
   }
 
   const v2Body = body && typeof body === 'object' && 'v2' in body ? (body as Record<string, unknown>).v2 : body;
+  const v2Headers: Record<string, string> = {
+    Accept: 'application/json',
+    'Authorization-Type': 'v2',
+    Authorization: `Bearer ${token}`,
+  };
+  if (v2Body) {
+    v2Headers['Content-Type'] = 'application/vnd.api+json';
+  }
+
   const v2Response = await fetch(requestUrl, {
     method,
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/vnd.api+json',
-      'Authorization-Type': 'v2',
-      Authorization: `Bearer ${token}`,
-    },
+    headers: v2Headers,
     body: v2Body ? JSON.stringify(v2Body) : undefined,
   });
   const v2Payload = await parseJsonResponse(v2Response);
@@ -76,20 +116,19 @@ export const requestChallonge = async (path: string, token: string, method: stri
     return v2Payload;
   }
 
-  if (v2Response.status === 401) {
+  if (v2Response.status === 401 || v2Response.status === 404 || v2Response.status === 422) {
     try {
       return await executeV1();
     } catch {
-      throw new Error('Invalid or expired Challonge API token');
+      // Fallback failed, throw original formatted error below
     }
   }
 
-  const v2Error = v2Payload as ChallongeErrorPayload;
-  throw new Error(
-    v2Error?.errors?.detail ??
-    v2Error?.error ??
+  const errorMsg = formatChallongeError(
+    v2Payload,
     `Challonge responded with ${v2Response.status} ${v2Response.statusText}`.trim(),
   );
+  throw new Error(errorMsg);
 };
 
 export const normalizeTournamentSlug = (value: string): string => {
@@ -153,13 +192,22 @@ export const parseRecentTournaments = (payload: unknown): RecentTournament[] => 
   }
 
   if (typeof payload === 'object' && payload !== null) {
-    const data = (payload as Record<string, unknown>).data;
+    const p = payload as Record<string, unknown>;
+    if (p.tournament && typeof p.tournament === 'object' && p.tournament !== null) {
+      push(p.tournament as Record<string, unknown>);
+      return rows;
+    }
+    const data = p.data;
     if (Array.isArray(data)) {
       for (const row of data as unknown[]) {
         if (typeof row === 'object' && row !== null) {
           push(row as Record<string, unknown>);
         }
       }
+    } else if (data && typeof data === 'object' && data !== null) {
+      push(data as Record<string, unknown>);
+    } else {
+      push(p);
     }
   }
 
@@ -196,6 +244,15 @@ export const parseImportedPlayers = (payload: unknown): ImportedPlayer[] => {
     const gamertag = pipeMatch ? pipeMatch[2].trim() : rawDisplayName;
     const team = String(attributes.team_name ?? '').trim() || teamFromName;
 
+    const rawSeed = attributes.seed ?? candidate.seed ?? attributes.seed_number ?? candidate.seed_number;
+    let seed: number | undefined = undefined;
+    if (typeof rawSeed === 'number' && Number.isFinite(rawSeed)) {
+      seed = rawSeed;
+    } else if (typeof rawSeed === 'string' && rawSeed.trim() !== '') {
+      const parsed = Number(rawSeed);
+      if (Number.isFinite(parsed)) seed = parsed;
+    }
+
     map.set(id, {
       id,
       gamertag,
@@ -205,6 +262,7 @@ export const parseImportedPlayers = (payload: unknown): ImportedPlayer[] => {
       twitter: String(attributes.twitter_handle ?? attributes.twitter ?? '').trim(),
       avatarUrl: String(attributes.attached_participant_portrait_url ?? attributes.portrait_url ?? attributes.icon_url ?? '').trim(),
       challongeId: id,
+      seed,
     });
   };
 
@@ -221,13 +279,27 @@ export const parseImportedPlayers = (payload: unknown): ImportedPlayer[] => {
   }
 
   if (typeof payload === 'object' && payload !== null) {
-    const data = (payload as Record<string, unknown>).data;
+    const p = payload as Record<string, unknown>;
+    const data = p.data;
     if (Array.isArray(data)) {
       for (const row of data as unknown[]) {
         if (typeof row === 'object' && row !== null) {
           push(row as Record<string, unknown>);
         }
       }
+    } else if (Array.isArray(p.participants)) {
+      for (const row of p.participants as unknown[]) {
+        const wrapper = row as Record<string, unknown>;
+        const participant =
+          typeof wrapper.participant === 'object' && wrapper.participant !== null
+            ? (wrapper.participant as Record<string, unknown>)
+            : wrapper;
+        push(participant);
+      }
+    } else if (typeof p.participant === 'object' && p.participant !== null) {
+      push(p.participant as Record<string, unknown>);
+    } else if (data && typeof data === 'object') {
+      push(data as Record<string, unknown>);
     }
   }
 
@@ -245,8 +317,11 @@ export const parseMatches = (payload: unknown): BracketSet[] => {
         : candidate;
     
     let state: BracketSet['state'] = 'pending';
-    if (attributes.state === 'open' || attributes.state === 'underway') state = 'in_progress';
+    if (attributes.state === 'underway' || Boolean(attributes.underway_at)) state = 'in_progress';
     if (attributes.state === 'complete') state = 'completed';
+
+
+
 
     let player1Id = '';
     let player2Id = '';

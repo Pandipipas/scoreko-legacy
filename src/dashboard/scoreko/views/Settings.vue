@@ -203,6 +203,24 @@ watch(() => startgg.importDialogError, (msg) => {
 watch(() => challonge.importDialogError, (msg) => {
   if (msg) $q.notify({ type: 'negative', message: msg });
 });
+
+interface IntegrationCapability {
+  key: string;
+  labelKey: Parameters<typeof t>[0];
+  startgg: boolean;
+  challonge: boolean;
+}
+
+const integrationCapabilities: IntegrationCapability[] = [
+  { key: 'tournaments', labelKey: 'settingsCapTournaments', startgg: true, challonge: true },
+  { key: 'importPlayers', labelKey: 'settingsCapImportPlayers', startgg: true, challonge: true },
+  { key: 'trackBracket', labelKey: 'settingsCapTrackBracket', startgg: true, challonge: true },
+  { key: 'reportMatches', labelKey: 'settingsCapReportMatches', startgg: true, challonge: true },
+  { key: 'streamQueue', labelKey: 'settingsCapStreamQueue', startgg: true, challonge: false },
+  { key: 'standings', labelKey: 'settingsCapStandings', startgg: true, challonge: false },
+  { key: 'createTournament', labelKey: 'settingsCapCreateTournament', startgg: false, challonge: true },
+  { key: 'manageTournament', labelKey: 'settingsCapManageTournament', startgg: false, challonge: true },
+];
 </script>
 
 <template>
@@ -495,53 +513,35 @@ watch(() => challonge.importDialogError, (msg) => {
                 </QCardSection>
                 <QSeparator />
                 <QCardSection class="col-grow">
-                  <QList dense>
-                    <QItem class="q-px-none">
+                  <div class="text-caption text-weight-medium text-grey-5 q-mb-sm text-uppercase">
+                    {{ t('settingsCapabilityTitle') }}
+                  </div>
+                  <QList
+                    dense
+                    class="q-gutter-y-xs"
+                  >
+                    <QItem
+                      v-for="cap in integrationCapabilities"
+                      :key="cap.key"
+                      class="q-px-none"
+                      style="min-height: 28px;"
+                    >
                       <QItemSection
                         avatar
                         style="min-width: 0"
                         class="q-pr-sm"
                       >
                         <QIcon
-                          name="check_circle"
-                          color="positive"
-                          size="xs"
+                          :name="cap.startgg ? 'check_circle' : 'cancel'"
+                          :color="cap.startgg ? 'positive' : 'grey-6'"
+                          size="18px"
                         />
                       </QItemSection>
-                      <QItemSection class="text-body2">
-                        {{ t('settingsFeatureFetchPlayers') }}
-                      </QItemSection>
-                    </QItem>
-                    <QItem class="q-px-none">
                       <QItemSection
-                        avatar
-                        style="min-width: 0"
-                        class="q-pr-sm"
+                        class="text-body2"
+                        :class="{ 'text-grey-6': !cap.startgg }"
                       >
-                        <QIcon
-                          name="check_circle"
-                          color="positive"
-                          size="xs"
-                        />
-                      </QItemSection>
-                      <QItemSection class="text-body2">
-                        {{ t('settingsFeatureFetchMatches') }}
-                      </QItemSection>
-                    </QItem>
-                    <QItem class="q-px-none">
-                      <QItemSection
-                        avatar
-                        style="min-width: 0"
-                        class="q-pr-sm"
-                      >
-                        <QIcon
-                          name="check_circle"
-                          color="positive"
-                          size="xs"
-                        />
-                      </QItemSection>
-                      <QItemSection class="text-body2">
-                        {{ t('settingsFeatureReportScores') }}
+                        {{ t(cap.labelKey) }}
                       </QItemSection>
                     </QItem>
                   </QList>
@@ -610,53 +610,35 @@ watch(() => challonge.importDialogError, (msg) => {
                 </QCardSection>
                 <QSeparator />
                 <QCardSection class="col-grow">
-                  <QList dense>
-                    <QItem class="q-px-none">
+                  <div class="text-caption text-weight-medium text-grey-5 q-mb-sm text-uppercase">
+                    {{ t('settingsCapabilityTitle') }}
+                  </div>
+                  <QList
+                    dense
+                    class="q-gutter-y-xs"
+                  >
+                    <QItem
+                      v-for="cap in integrationCapabilities"
+                      :key="cap.key"
+                      class="q-px-none"
+                      style="min-height: 28px;"
+                    >
                       <QItemSection
                         avatar
                         style="min-width: 0"
                         class="q-pr-sm"
                       >
                         <QIcon
-                          name="check_circle"
-                          color="positive"
-                          size="xs"
+                          :name="cap.challonge ? 'check_circle' : 'cancel'"
+                          :color="cap.challonge ? 'positive' : 'grey-6'"
+                          size="18px"
                         />
                       </QItemSection>
-                      <QItemSection class="text-body2">
-                        {{ t('settingsFeatureFetchPlayers') }}
-                      </QItemSection>
-                    </QItem>
-                    <QItem class="q-px-none">
                       <QItemSection
-                        avatar
-                        style="min-width: 0"
-                        class="q-pr-sm"
+                        class="text-body2"
+                        :class="{ 'text-grey-6': !cap.challonge }"
                       >
-                        <QIcon
-                          name="check_circle"
-                          color="positive"
-                          size="xs"
-                        />
-                      </QItemSection>
-                      <QItemSection class="text-body2">
-                        {{ t('settingsFeatureFetchMatches') }}
-                      </QItemSection>
-                    </QItem>
-                    <QItem class="q-px-none">
-                      <QItemSection
-                        avatar
-                        style="min-width: 0"
-                        class="q-pr-sm"
-                      >
-                        <QIcon
-                          name="check_circle"
-                          color="positive"
-                          size="xs"
-                        />
-                      </QItemSection>
-                      <QItemSection class="text-body2">
-                        {{ t('settingsFeatureReportScores') }}
+                        {{ t(cap.labelKey) }}
                       </QItemSection>
                     </QItem>
                   </QList>

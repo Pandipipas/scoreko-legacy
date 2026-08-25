@@ -136,3 +136,84 @@ export const REPORT_SET_MUTATION = `
     }
   }
 `;
+
+export const STREAM_QUEUE_QUERY = `
+  query TournamentStreamQueue($slug: String!) {
+    tournament(slug: $slug) {
+      streamQueue {
+        stream {
+          id
+          streamName
+          streamSource
+        }
+        sets {
+          id
+          fullRoundText
+          identifier
+          round
+          state
+          event {
+            id
+            name
+          }
+          slots {
+            entrant {
+              id
+              participants {
+                id
+                gamerTag
+                prefix
+              }
+            }
+            standing {
+              stats {
+                score {
+                  value
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const EVENT_STANDINGS_QUERY = `
+  query EventStandings($eventId: ID!, $page: Int!, $perPage: Int!) {
+    event(id: $eventId) {
+      standings(query: { page: $page, perPage: $perPage }) {
+        pageInfo {
+          totalPages
+        }
+        nodes {
+          id
+          placement
+          entrant {
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const RESET_SET_MUTATION = `
+  mutation ResetSet($setId: ID!) {
+    resetSet(setId: $setId) {
+      id
+      state
+    }
+  }
+`;
+
+export const MARK_SET_IN_PROGRESS_MUTATION = `
+  mutation MarkSetInProgress($setId: ID!) {
+    markSetInProgress(setId: $setId) {
+      id
+      state
+    }
+  }
+`;
+

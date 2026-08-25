@@ -3,9 +3,24 @@ import { ref, watch } from 'vue';
 import { useNotify } from '../composables/useNotify';
 import { t } from '../i18n';
 import { attachedBracketReplicant } from '../../../browser_shared/replicants';
-import type { Schemas, BracketEvent, BracketPhase, BracketPhaseGroup, BracketSet } from '../../../types';
+
+import type {
+  Schemas,
+  BracketEvent,
+  BracketPhase,
+  BracketPhaseGroup,
+  BracketSet,
+  StreamQueueItem,
+  BracketStanding,
+  CreateTournamentParams,
+  RecentTournament,
+  ImportedPlayer,
+  TournamentStateAction,
+  BulkParticipantInput,
+} from '../../../types';
 import { syncStateWithReplicant } from './store-sync';
 import { debounce } from 'quasar';
+
 
 type AttachedBracket = Schemas.AttachedBracket;
 
@@ -40,6 +55,12 @@ export const useBracketStore = defineStore('bracket', () => {
   const activeMatchId = ref<string | null>(null);
   const loading = ref(false);
   const error = ref<string | null>(null);
+
+  const streamQueue = ref<StreamQueueItem[]>([]);
+  const loadingStreamQueue = ref(false);
+
+  const standings = ref<BracketStanding[]>([]);
+  const loadingStandings = ref(false);
 
   const attached = ref<AttachedBracket>({
     provider: null,
@@ -154,37 +175,61 @@ export const useBracketStore = defineStore('bracket', () => {
   const debouncedFetchStartggSets = debounce(fetchStartggSets, 500);
   const debouncedFetchChallongeMatches = debounce(fetchChallongeMatches, 500);
 
-  const reportMatch = async (winnerId: string, scoresCsv?: string) => {
-    if (!activeMatchId.value) return;
+  const fetchStartggStreamQueue = async (slug?: string) => {
+    const targetSlug = slug || startggTournamentSlug.value || attached.value.tournamentSlug;
+    if (!targetSlug) return;
+    loadingStreamQueue.value = true;
+    try {
+      streamQueue.value = await nodecg.sendMessage('startgg:fetchStreamQueue', { slug: targetSlug });
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : 'Error fetching stream queue');
+      notifyError(msg);
+    } finally {
+      loadingStreamQueue.value = false;
+    }
+  };
+
+  const fetchStartggStandings = async (eventId?: string) => {
+    const targetEventId = eventId || startggEventId.value || attached.value.startggEventId;
+    if (!targetEventId) return;
+    loadingStandings.value = true;
+    try {
+      standings.value = await nodecg.sendMessage('startgg:fetchStandings', { eventId: targetEventId });
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : 'Error fetching standings');
+      notifyError(msg);
+    } finally {
+      loadingStandings.value = false;
+    }
+  };
+
+  const reportMatch = async (winnerId: string, scoresCsv?: string, targetMatchId?: string) => {
+    const matchId = targetMatchId || activeMatchId.value;
+    if (!matchId) return;
     loading.value = true;
     error.value = null;
     try {
       if (provider.value === 'startgg') {
         await nodecg.sendMessage('startgg:reportSet', {
-          setId: activeMatchId.value,
+          setId: matchId,
           winnerId,
           scoresCsv,
         });
         
-        
-        const match = matches.value.find(m => m.id === activeMatchId.value);
+        const match = matches.value.find(m => m.id === matchId);
         if (match) {
           match.state = 'completed';
           match.winnerId = winnerId;
-          
-          
         }
-        
       } else if (provider.value === 'challonge') {
         await nodecg.sendMessage('challonge:reportMatch', {
           slug: challongeTournamentSlug.value,
-          matchId: activeMatchId.value,
+          matchId,
           winnerId,
           scoresCsv,
         });
 
-        
-        const match = matches.value.find(m => m.id === activeMatchId.value);
+        const match = matches.value.find(m => m.id === matchId);
         if (match) {
           match.state = 'completed';
           match.winnerId = winnerId;
@@ -193,6 +238,208 @@ export const useBracketStore = defineStore('bracket', () => {
       notifySuccess(t('bracketReportSuccess'));
     } catch (e) {
       const msg = e instanceof Error ? e.message : t('bracketReportFailed');
+      error.value = msg;
+      notifyError(msg);
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const resetMatch = async (matchId: string) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      if (provider.value === 'startgg') {
+        await nodecg.sendMessage('startgg:resetSet', { setId: matchId });
+        const match = matches.value.find(m => m.id === matchId);
+        if (match) {
+          match.state = 'pending';
+          match.winnerId = undefined;
+          if (match.player1) match.player1.score = null;
+          if (match.player2) match.player2.score = null;
+        }
+        if (startggGroupId.value) {
+          debouncedFetchStartggSets(startggGroupId.value);
+        }
+      } else if (provider.value === 'challonge') {
+        const match = matches.value.find(m => m.id === matchId);
+        const action = match?.state === 'in_progress' ? 'unmark_as_underway' : 'reopen';
+        await nodecg.sendMessage('challonge:changeMatchState', {
+          slug: challongeTournamentSlug.value,
+          matchId,
+          action,
+        });
+        if (match) {
+          match.state = 'pending';
+          match.winnerId = undefined;
+          if (match.player1) match.player1.score = null;
+          if (match.player2) match.player2.score = null;
+        }
+        if (challongeTournamentSlug.value) {
+          debouncedFetchChallongeMatches(challongeTournamentSlug.value);
+        }
+      }
+      notifySuccess(t('matchActionResetSuccess'));
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : t('matchActionResetFailed'));
+      error.value = msg;
+      notifyError(msg);
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const markMatchInProgress = async (matchId: string) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      if (provider.value === 'startgg') {
+        await nodecg.sendMessage('startgg:markSetInProgress', { setId: matchId });
+        const match = matches.value.find(m => m.id === matchId);
+        if (match) {
+          match.state = 'in_progress';
+        }
+        if (startggGroupId.value) {
+          debouncedFetchStartggSets(startggGroupId.value);
+        }
+      } else if (provider.value === 'challonge') {
+        await nodecg.sendMessage('challonge:changeMatchState', {
+          slug: challongeTournamentSlug.value,
+          matchId,
+          action: 'mark_as_underway',
+        });
+        const match = matches.value.find(m => m.id === matchId);
+        if (match) {
+          match.state = 'in_progress';
+        }
+        if (challongeTournamentSlug.value) {
+          debouncedFetchChallongeMatches(challongeTournamentSlug.value);
+        }
+      }
+      notifySuccess(t('matchActionInProgressSuccess'));
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : t('matchActionInProgressFailed'));
+      error.value = msg;
+      notifyError(msg);
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const createChallongeTournament = async (params: CreateTournamentParams): Promise<RecentTournament> => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const created: RecentTournament = await nodecg.sendMessage('challonge:createTournament', params);
+      challongeTournamentSlug.value = created.slug;
+      provider.value = 'challonge';
+      notifySuccess(t('challongeCreateSuccess'));
+      return created;
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : t('challongeCreateFailed'));
+      error.value = msg;
+      notifyError(msg);
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const changeChallongeTournamentState = async (slug: string, action: TournamentStateAction) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      await nodecg.sendMessage('challonge:changeTournamentState', { slug, action });
+      await fetchChallongeMatches(slug);
+      notifySuccess(t('challongeStateChangeSuccess'));
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : t('challongeStateChangeFailed'));
+      error.value = msg;
+      notifyError(msg);
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const fetchChallongeParticipants = async (slug: string): Promise<ImportedPlayer[]> => {
+    loading.value = true;
+    error.value = null;
+    try {
+      return await nodecg.sendMessage('challonge:fetchTournamentPlayers', { slug });
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : 'Error fetching participants');
+      error.value = msg;
+      notifyError(msg);
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const createChallongeParticipant = async (slug: string, data: { name: string; seed?: number; misc?: string }): Promise<ImportedPlayer[]> => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const players: ImportedPlayer[] = await nodecg.sendMessage('challonge:createParticipant', { slug, ...data });
+      notifySuccess(t('challongeAddParticipantSuccess'));
+      return players;
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : t('challongeAddParticipantFailed'));
+      error.value = msg;
+      notifyError(msg);
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const bulkCreateChallongeParticipants = async (slug: string, participants: BulkParticipantInput[]): Promise<ImportedPlayer[]> => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const players: ImportedPlayer[] = await nodecg.sendMessage('challonge:bulkCreateParticipants', { slug, participants });
+      notifySuccess(t('challongeBulkAddSuccess'));
+      return players;
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : t('challongeBulkAddFailed'));
+      error.value = msg;
+      notifyError(msg);
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const randomizeChallongeSeeds = async (slug: string): Promise<ImportedPlayer[]> => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const players: ImportedPlayer[] = await nodecg.sendMessage('challonge:randomizeParticipants', { slug });
+      notifySuccess(t('challongeRandomizeSuccess'));
+      return players;
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : t('challongeRandomizeFailed'));
+      error.value = msg;
+      notifyError(msg);
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const deleteChallongeParticipant = async (slug: string, participantId: string): Promise<ImportedPlayer[]> => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const players: ImportedPlayer[] = await nodecg.sendMessage('challonge:deleteParticipant', { slug, participantId });
+      notifySuccess(t('challongeDeleteParticipantSuccess'));
+      return players;
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : t('challongeDeleteParticipantFailed'));
       error.value = msg;
       notifyError(msg);
       throw e;
@@ -227,6 +474,8 @@ export const useBracketStore = defineStore('bracket', () => {
   const detachTournament = () => {
     activeMatchId.value = null;
     matches.value = [];
+    streamQueue.value = [];
+    standings.value = [];
     attached.value = {
       provider: null,
       tournamentSlug: null,
@@ -286,6 +535,10 @@ export const useBracketStore = defineStore('bracket', () => {
     phases,
     groups,
     matches,
+    streamQueue,
+    loadingStreamQueue,
+    standings,
+    loadingStandings,
     activeMatchId,
     loading,
     error,
@@ -293,10 +546,24 @@ export const useBracketStore = defineStore('bracket', () => {
     fetchStartggPhases,
     fetchStartggGroups,
     fetchStartggSets: debouncedFetchStartggSets,
+    fetchStartggStreamQueue,
+    fetchStartggStandings,
     fetchChallongeMatches: debouncedFetchChallongeMatches,
+    fetchChallongeParticipants,
+    createChallongeTournament,
+    changeChallongeTournamentState,
+    createChallongeParticipant,
+    bulkCreateChallongeParticipants,
+    randomizeChallongeSeeds,
+    deleteChallongeParticipant,
     reportMatch,
+
+    resetMatch,
+    markMatchInProgress,
     attached,
     attachTournament,
     detachTournament,
   };
 });
+
+

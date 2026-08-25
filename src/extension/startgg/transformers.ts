@@ -1,9 +1,10 @@
-import type { ImportedPlayer, BracketSet, BracketPlayer } from '../util/types.js';
-import type { StartGGParticipantNode, StartGGSetNode } from './types.js';
+import type { ImportedPlayer, BracketSet, BracketPlayer, StreamQueueSet, BracketStanding } from '../util/types.js';
+import type { StartGGParticipantNode, StartGGSetNode, StartGGStreamQueueSetNode, StartGGStandingNode } from './types.js';
 import { resolveCountryCode } from '../util/helpers.js';
 import { cacheParticipantEntrant } from './service.js';
 
 export function transformParticipantNode(participant: StartGGParticipantNode): ImportedPlayer | null {
+
   const playerId = String(participant.id);
   const gamertag = (participant.gamerTag ?? '').trim();
   if (!gamertag) return null;
@@ -51,7 +52,7 @@ export function transformSetNode(s: StartGGSetNode): BracketSet {
   let state: BracketSet['state'] = 'pending';
   if (s.state === 2 || s.state === 6) state = 'in_progress';
   else if (s.state === 3) state = 'completed';
-  else if (s.state === 1 && p1Participant && p2Participant) state = 'in_progress';
+
 
   const p1Score = s.slots[0]?.standing?.stats?.score?.value ?? null;
   const p2Score = s.slots[1]?.standing?.stats?.score?.value ?? null;
@@ -91,3 +92,51 @@ export function transformSetNode(s: StartGGSetNode): BracketSet {
     winnerId: resolvedWinnerId,
   };
 }
+
+export function transformStreamQueueSetNode(s: StartGGStreamQueueSetNode): StreamQueueSet {
+  const p1Participant = s.slots?.[0]?.entrant?.participants?.[0];
+  const p2Participant = s.slots?.[1]?.entrant?.participants?.[0];
+
+  if (p1Participant && s.slots?.[0]?.entrant?.id) {
+    cacheParticipantEntrant(String(p1Participant.id), String(s.slots[0].entrant.id));
+  }
+  if (p2Participant && s.slots?.[1]?.entrant?.id) {
+    cacheParticipantEntrant(String(p2Participant.id), String(s.slots[1].entrant.id));
+  }
+
+  const player1: BracketPlayer | null = p1Participant ? {
+    id: String(p1Participant.id),
+    gamertag: p1Participant.gamerTag,
+    team: p1Participant.prefix ?? undefined,
+  } : null;
+
+  const player2: BracketPlayer | null = p2Participant ? {
+    id: String(p2Participant.id),
+    gamertag: p2Participant.gamerTag,
+    team: p2Participant.prefix ?? undefined,
+  } : null;
+
+  return {
+    id: String(s.id),
+    fullRoundText: s.fullRoundText || '',
+    identifier: s.identifier || '',
+    event: {
+      id: String(s.event?.id ?? ''),
+      name: s.event?.name ?? '',
+    },
+    player1,
+    player2,
+  };
+}
+
+export function transformStandingNode(node: StartGGStandingNode): BracketStanding | null {
+  if (!node.entrant || !node.entrant.name) return null;
+  return {
+    placement: node.placement ?? 0,
+    entrantId: String(node.entrant.id),
+    entrantName: node.entrant.name,
+  };
+}
+
+
+

@@ -42,9 +42,15 @@ export const setLocale = (value: Locale) => {
   }
 };
 
-export const t = (key: keyof Translations): string => {
+export const t = (key: keyof Translations, params?: Record<string, string | number>): string => {
   const currentLocale = locale.value;
   const bundle = messages[currentLocale] || messages.en;
-  return bundle[key] || messages.en[key] || key;
+  let text = bundle[key] || messages.en[key] || key;
+  if (params) {
+    for (const [paramKey, paramValue] of Object.entries(params)) {
+      text = text.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(paramValue));
+    }
+  }
+  return text;
 };
 

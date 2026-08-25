@@ -109,3 +109,53 @@ export interface StartGGReportSetResponse {
     slots: StartGGReportSetSlotNode[];
   } | null;
 }
+
+export interface StartGGStreamNode {
+  id: string | number;
+  streamName: string;
+  streamSource: string;
+}
+
+export interface StartGGStreamQueueSetNode {
+  id: string | number;
+  fullRoundText: string;
+  identifier: string;
+  round?: number;
+  state?: number;
+  event: { id: string | number; name: string };
+  slots: StartGGSetSlotNode[];
+}
+
+export interface StartGGStreamQueueNode {
+  stream: StartGGStreamNode | null;
+  sets: StartGGStreamQueueSetNode[] | null;
+}
+
+export interface StartGGStreamQueueResponse {
+  tournament: {
+    streamQueue: StartGGStreamQueueNode[] | null;
+  } | null;
+}
+
+export interface StartGGStandingEntrantNode {
+  id: string | number;
+  name: string;
+}
+
+export interface StartGGStandingNode {
+  id?: string | number | null;
+  placement: number | null;
+  entrant: StartGGStandingEntrantNode | null;
+}
+
+
+export interface StartGGEventStandingsResponse {
+  event: {
+    standings: {
+      pageInfo?: { totalPages: number };
+      nodes: StartGGStandingNode[];
+    } | null;
+  } | null;
+}
+
+

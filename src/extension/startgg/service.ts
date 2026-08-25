@@ -5,7 +5,7 @@ import {
 } from './api.js';
 import { globalRequestCache, SimpleLRUCache } from '../util/request-cache.js';
 import { startggParticipantEntrantMapReplicant } from '../util/replicants.js';
-import type { ImportedPlayer, BracketSet } from '../util/types.js';
+import type { ImportedPlayer, BracketSet, StreamQueueItem, BracketStanding } from '../util/types.js';
 import type {
   StartGGRecentTournamentsResponse,
   StartGGTournamentParticipantsResponse,
@@ -16,8 +16,12 @@ import type {
   StartGGReportSetResponse,
   StartGGParticipantNode,
   StartGGSetNode,
+  StartGGStreamQueueResponse,
+  StartGGStreamQueueNode,
+  StartGGStreamNode,
+  StartGGEventStandingsResponse,
 } from './types.js';
-import { transformParticipantNode, transformSetNode } from './transformers.js';
+import { transformParticipantNode, transformSetNode, transformStreamQueueSetNode, transformStandingNode } from './transformers.js';
 import {
   RECENT_TOURNAMENTS_QUERY,
   TOURNAMENT_PARTICIPANTS_QUERY,
@@ -27,7 +31,12 @@ import {
   GROUP_SETS_QUERY,
   GET_SET_FOR_REPORT_QUERY,
   REPORT_SET_MUTATION,
+  RESET_SET_MUTATION,
+  MARK_SET_IN_PROGRESS_MUTATION,
+  STREAM_QUEUE_QUERY,
+  EVENT_STANDINGS_QUERY,
 } from './queries.js';
+
 
 const MAX_CACHE_SIZE = 1000;
 const participantToEntrantCache = new SimpleLRUCache<string, string>(MAX_CACHE_SIZE);
@@ -229,3 +238,49 @@ export async function reportSet(setId: string, winnerParticipantId: string, scor
   globalRequestCache.invalidate('startgg:sets:');
   return { success: true };
 }
+
+export async function fetchStreamQueue(slug: string, token: string): Promise<StreamQueueItem[]> {
+  return globalRequestCache.wrap(`startgg:streamqueue:${slug}`, 30 * 1000, async () => {
+    const data = await requestStartGG<StartGGStreamQueueResponse>(STREAM_QUEUE_QUERY, { slug }, token);
+    const queue = data.tournament?.streamQueue ?? [];
+    return queue
+      .filter((item): item is StartGGStreamQueueNode & { stream: StartGGStreamNode } => item.stream !== null && item.stream !== undefined)
+      .map(item => ({
+        stream: {
+          id: String(item.stream.id),
+          streamName: item.stream.streamName,
+          streamSource: item.stream.streamSource,
+        },
+        sets: (item.sets ?? []).map(transformStreamQueueSetNode),
+      }));
+  });
+}
+
+export async function fetchEventStandings(eventId: string, token: string): Promise<BracketStanding[]> {
+  return globalRequestCache.wrap(`startgg:standings:${eventId}`, 30 * 1000, async () => {
+    const data = await requestStartGG<StartGGEventStandingsResponse>(
+      EVENT_STANDINGS_QUERY,
+      { eventId, page: 1, perPage: 64 },
+      token
+    );
+    const nodes = data.event?.standings?.nodes ?? [];
+    return nodes
+      .map(transformStandingNode)
+      .filter((s): s is BracketStanding => s !== null)
+      .sort((a, b) => a.placement - b.placement);
+  });
+}
+
+export async function resetSet(setId: string, token: string) {
+  await requestStartGG(RESET_SET_MUTATION, { setId }, token);
+  globalRequestCache.invalidate('startgg:sets:');
+  return { success: true };
+}
+
+export async function markSetInProgress(setId: string, token: string) {
+  await requestStartGG(MARK_SET_IN_PROGRESS_MUTATION, { setId }, token);
+  globalRequestCache.invalidate('startgg:sets:');
+  return { success: true };
+}
+
+

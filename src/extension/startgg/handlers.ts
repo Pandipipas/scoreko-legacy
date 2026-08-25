@@ -12,7 +12,12 @@ import {
   fetchGroups,
   fetchSets,
   reportSet,
+  resetSet,
+  markSetInProgress,
+  fetchStreamQueue,
+  fetchEventStandings,
 } from './service.js';
+
 
 export function setupHandlers() {
   nodecg.listenFor('startgg:createOAuthSession', createHandler({
@@ -193,4 +198,66 @@ export function setupHandlers() {
       }
     }
   }));
+
+  nodecg.listenFor('startgg:fetchStreamQueue', createHandler({
+    requiresToken: 'startgg',
+    handler: async (payload: unknown, ack, { token }) => {
+      const slug = getStringProp(payload, 'slug');
+      if (!slug) { sendAck(ack, 'Missing tournament slug'); return; }
+
+      try {
+        const queue = await fetchStreamQueue(slug, token);
+        sendAck(ack, null, queue);
+      } catch (error) {
+        sendAck(ack, error instanceof Error ? error.message : 'Error fetching stream queue');
+      }
+    }
+  }));
+
+  nodecg.listenFor('startgg:fetchStandings', createHandler({
+    requiresToken: 'startgg',
+    handler: async (payload: unknown, ack, { token }) => {
+      const eventId = getStringProp(payload, 'eventId');
+      if (!eventId) { sendAck(ack, 'Missing event ID'); return; }
+
+      try {
+        const standings = await fetchEventStandings(eventId, token);
+        sendAck(ack, null, standings);
+      } catch (error) {
+        sendAck(ack, error instanceof Error ? error.message : 'Error fetching standings');
+      }
+    }
+  }));
+
+  nodecg.listenFor('startgg:resetSet', createHandler({
+    requiresToken: 'startgg',
+    handler: async (payload: unknown, ack, { token }) => {
+      const setId = getStringProp(payload, 'setId');
+      if (!setId) { sendAck(ack, 'Missing set ID'); return; }
+
+      try {
+        const result = await resetSet(setId, token);
+        sendAck(ack, null, result);
+      } catch (error) {
+        sendAck(ack, error instanceof Error ? error.message : 'Error resetting set');
+      }
+    }
+  }));
+
+  nodecg.listenFor('startgg:markSetInProgress', createHandler({
+    requiresToken: 'startgg',
+    handler: async (payload: unknown, ack, { token }) => {
+      const setId = getStringProp(payload, 'setId');
+      if (!setId) { sendAck(ack, 'Missing set ID'); return; }
+
+      try {
+        const result = await markSetInProgress(setId, token);
+        sendAck(ack, null, result);
+      } catch (error) {
+        sendAck(ack, error instanceof Error ? error.message : 'Error marking set in progress');
+      }
+    }
+  }));
 }
+
+
