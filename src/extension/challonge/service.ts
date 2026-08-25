@@ -8,9 +8,10 @@ import {
 import { nodecg } from '../util/nodecg.js';
 import { globalRequestCache } from '../util/request-cache.js';
 import { challongeParticipantsMapReplicant } from '../util/replicants.js';
-import type { ImportedPlayer } from '../util/types.js';
+import type { ImportedPlayer, RecentTournament, CreateTournamentParams } from '../util/types.js';
 
 export async function fetchRecentTournaments(token: string) {
+
   return globalRequestCache.wrap('challonge:tournaments', 5 * 60 * 1000, async () => {
     const raw = await requestChallonge('/tournaments.json', token);
     return parseRecentTournaments(raw)
@@ -161,6 +162,48 @@ export async function changeMatchState(
   globalRequestCache.invalidateExact(`challonge:matches:${slug}`);
   return { success: true };
 }
+
+export async function createTournament(params: CreateTournamentParams, token: string): Promise<RecentTournament> {
+  const v1Tournament: Record<string, unknown> = {
+    name: params.name.trim(),
+    tournament_type: params.tournamentType || 'double elimination',
+  };
+  if (params.url?.trim()) v1Tournament.url = params.url.trim();
+  if (params.gameName?.trim()) v1Tournament.game_name = params.gameName.trim();
+  if (params.description?.trim()) v1Tournament.description = params.description.trim();
+  if (typeof params.openSignup === 'boolean') v1Tournament.open_signup = params.openSignup;
+
+  const v2Attributes: Record<string, unknown> = {
+    name: params.name.trim(),
+    tournament_type: params.tournamentType || 'double elimination',
+  };
+  if (params.url?.trim()) v2Attributes.url = params.url.trim();
+  if (params.gameName?.trim()) v2Attributes.game_name = params.gameName.trim();
+  if (params.description?.trim()) v2Attributes.description = params.description.trim();
+  if (typeof params.openSignup === 'boolean') v2Attributes.open_signup = params.openSignup;
+
+  const body = {
+    v1: {
+      tournament: v1Tournament,
+    },
+    v2: {
+      data: {
+        type: 'Tournament',
+        attributes: v2Attributes,
+      },
+    },
+  };
+
+  const raw = await requestChallonge('/tournaments.json', token, 'POST', body);
+  const parsed = parseRecentTournaments(raw);
+  if (!parsed.length) {
+    throw new Error('Failed to parse created Challonge tournament');
+  }
+
+  globalRequestCache.invalidateExact('challonge:tournaments');
+  return parsed[0];
+}
+
 
 
 

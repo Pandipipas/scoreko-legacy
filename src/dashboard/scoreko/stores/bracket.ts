@@ -3,9 +3,21 @@ import { ref, watch } from 'vue';
 import { useNotify } from '../composables/useNotify';
 import { t } from '../i18n';
 import { attachedBracketReplicant } from '../../../browser_shared/replicants';
-import type { Schemas, BracketEvent, BracketPhase, BracketPhaseGroup, BracketSet, StreamQueueItem, BracketStanding } from '../../../types';
+
+import type {
+  Schemas,
+  BracketEvent,
+  BracketPhase,
+  BracketPhaseGroup,
+  BracketSet,
+  StreamQueueItem,
+  BracketStanding,
+  CreateTournamentParams,
+  RecentTournament,
+} from '../../../types';
 import { syncStateWithReplicant } from './store-sync';
 import { debounce } from 'quasar';
+
 
 type AttachedBracket = Schemas.AttachedBracket;
 
@@ -314,6 +326,26 @@ export const useBracketStore = defineStore('bracket', () => {
     }
   };
 
+  const createChallongeTournament = async (params: CreateTournamentParams): Promise<RecentTournament> => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const created: RecentTournament = await nodecg.sendMessage('challonge:createTournament', params);
+      challongeTournamentSlug.value = created.slug;
+      provider.value = 'challonge';
+      notifySuccess(t('challongeCreateSuccess'));
+      return created;
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : t('challongeCreateFailed'));
+      error.value = msg;
+      notifyError(msg);
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+
 
 
   const attachTournament = () => {
@@ -417,7 +449,9 @@ export const useBracketStore = defineStore('bracket', () => {
     fetchStartggStreamQueue,
     fetchStartggStandings,
     fetchChallongeMatches: debouncedFetchChallongeMatches,
+    createChallongeTournament,
     reportMatch,
+
     resetMatch,
     markMatchInProgress,
     attached,

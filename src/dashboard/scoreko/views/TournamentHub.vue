@@ -106,11 +106,59 @@ watch(() => bracketStore.challongeTournamentSlug, (slug) => {
 }, { immediate: true });
 
 const setupStep = ref(1);
+const challongeMode = ref<'fetch' | 'create'>('fetch');
+
+const createForm = ref<{
+  name: string;
+  tournamentType: 'double elimination' | 'single elimination' | 'round robin' | 'swiss';
+  url: string;
+  gameName: string;
+  description: string;
+}>({
+  name: '',
+  tournamentType: 'double elimination',
+  url: '',
+  gameName: '',
+  description: '',
+});
+const isCreatingTournament = ref(false);
+
+const challongeFormatOptions = computed(() => [
+  { label: t('challongeFormatDoubleElim'), value: 'double elimination' as const },
+  { label: t('challongeFormatSingleElim'), value: 'single elimination' as const },
+  { label: t('challongeFormatRoundRobin'), value: 'round robin' as const },
+  { label: t('challongeFormatSwiss'), value: 'swiss' as const },
+]);
+
+const handleCreateChallongeTournament = async () => {
+  if (!createForm.value.name.trim()) {
+    $q.notify({ type: 'warning', message: t('challongeFieldNameRequired') });
+    return;
+  }
+  isCreatingTournament.value = true;
+  try {
+    const created = await bracketStore.createChallongeTournament({
+      name: createForm.value.name.trim(),
+      tournamentType: createForm.value.tournamentType,
+      url: createForm.value.url.trim() || undefined,
+      gameName: createForm.value.gameName.trim() || undefined,
+      description: createForm.value.description.trim() || undefined,
+    });
+    challonge.selectedTournamentSlug = created.slug;
+    await challonge.loadRecentTournaments();
+    setupStep.value = 4;
+  } catch {
+    // Handled in store
+  } finally {
+    isCreatingTournament.value = false;
+  }
+};
 
 const setProvider = (prov: 'startgg' | 'challonge') => {
   bracketStore.provider = prov;
   manualUrl.value = '';
   showAdvancedSearch.value = false;
+  challongeMode.value = 'fetch';
 };
 
 const showAdvancedSearch = ref(false);
@@ -140,15 +188,23 @@ const onContinueStep1 = () => {
 };
 
 const onContinueStep2 = () => {
-  if (bracketStore.provider === 'startgg' && !startgg.selectedTournamentSlug) {
+  if (bracketStore.provider === 'startgg') {
+    if (!startgg.selectedTournamentSlug) {
+      $q.notify({ type: 'warning', message: t('playersSelectTournamentFirst') });
+      return;
+    }
+    setupStep.value = 3;
+  } else if (bracketStore.provider === 'challonge') {
+    setupStep.value = 3;
+  }
+};
+
+const onContinueChallongeFetch = () => {
+  if (!challonge.selectedTournamentSlug) {
     $q.notify({ type: 'warning', message: t('playersSelectTournamentFirst') });
     return;
   }
-  if (bracketStore.provider === 'challonge' && !challonge.selectedTournamentSlug) {
-    $q.notify({ type: 'warning', message: t('playersSelectTournamentFirst') });
-    return;
-  }
-  setupStep.value = 3;
+  setupStep.value = 4;
 };
 
 const onContinueStep3 = () => {
@@ -158,6 +214,7 @@ const onContinueStep3 = () => {
   }
   setupStep.value = 4;
 };
+
 
 const startggTopTournaments = computed(() => startgg.tournamentOptions.slice(0, 5));
 const challongeTopTournaments = computed(() => challonge.tournamentOptions.slice(0, 5));
@@ -477,16 +534,15 @@ const onPinAndFinish = () => {
             </QStep>
 
             
+            <!-- STEP 2: STARTGG TOURNAMENT -->
             <QStep
+              v-if="bracketStore.provider === 'startgg'"
               :name="2"
               :title="t('bracketTournament')"
               icon="search"
               :done="setupStep > 2"
             >
-              <div
-                v-if="bracketStore.provider === 'startgg'"
-                class="column q-gutter-md"
-              >
+              <div class="column q-gutter-md">
                 <div v-if="startggTopTournaments.length > 0">
                   <div class="text-caption text-grey-5 q-mb-sm">
                     Recent Tournaments
@@ -561,8 +617,196 @@ const onPinAndFinish = () => {
                   />
                 </template>
               </div>
+
               <div
-                v-if="bracketStore.provider === 'challonge'"
+                v-if="adminWarning"
+                class="text-warning text-caption q-mt-sm"
+              >
+                ⚠️ This tournament is not in your recent admin list. You can still track it, but Player Auto-import and Match Reporting will fail if you don't have permissions.
+              </div>
+              <QStepperNavigation>
+                <QBtn 
+                  unelevated
+                  no-caps
+                  color="primary" 
+                  :label="t('tournamentBtnContinue')" 
+                  class="primary-action-btn"
+                  @click="onContinueStep2" 
+                />
+                <QBtn 
+                  flat 
+                  no-caps
+                  color="primary" 
+                  :label="t('tournamentBtnBack')" 
+                  class="flat-back-btn q-ml-sm" 
+                  @click="setupStep = 1" 
+                />
+              </QStepperNavigation>
+            </QStep>
+
+            <!-- STEP 2: CHALLONGE ACTION SELECTION -->
+            <QStep
+              v-else-if="bracketStore.provider === 'challonge'"
+              :name="2"
+              :title="t('tournamentStepAction')"
+              icon="tune"
+              :done="setupStep > 2"
+            >
+              <div class="column q-gutter-sm">
+                <div class="text-caption text-grey-5 q-mb-xs">
+                  {{ t('tournamentActionPrompt') }}
+                </div>
+                <QBtn
+                  flat
+                  no-caps
+                  align="left"
+                  class="sleek-select-btn"
+                  :class="{ 'active-selection': challongeMode === 'fetch' }"
+                  @click="challongeMode = 'fetch'"
+                >
+                  <div class="row items-center q-gutter-md full-width">
+                    <QIcon
+                      name="search"
+                      size="20px"
+                      color="primary"
+                    />
+                    <div class="column">
+                      <div class="text-weight-medium">
+                        {{ t('tournamentActionFetch') }}
+                      </div>
+                      <div class="text-caption text-grey-5">
+                        {{ t('tournamentActionFetchDesc') }}
+                      </div>
+                    </div>
+                  </div>
+                </QBtn>
+                <QBtn
+                  flat
+                  no-caps
+                  align="left"
+                  class="sleek-select-btn"
+                  :class="{ 'active-selection': challongeMode === 'create' }"
+                  @click="challongeMode = 'create'"
+                >
+                  <div class="row items-center q-gutter-md full-width">
+                    <QIcon
+                      name="add_circle_outline"
+                      size="20px"
+                      color="primary"
+                    />
+                    <div class="column">
+                      <div class="text-weight-medium">
+                        {{ t('tournamentActionCreate') }}
+                      </div>
+                      <div class="text-caption text-grey-5">
+                        {{ t('tournamentActionCreateDesc') }}
+                      </div>
+                    </div>
+                  </div>
+                </QBtn>
+              </div>
+              <QStepperNavigation>
+                <QBtn 
+                  unelevated
+                  no-caps
+                  color="primary" 
+                  :label="t('tournamentBtnContinue')" 
+                  class="primary-action-btn"
+                  @click="onContinueStep2" 
+                />
+                <QBtn 
+                  flat 
+                  no-caps
+                  color="primary" 
+                  :label="t('tournamentBtnBack')" 
+                  class="flat-back-btn q-ml-sm" 
+                  @click="setupStep = 1" 
+                />
+              </QStepperNavigation>
+            </QStep>
+
+            <!-- STEP 3: STARTGG BRACKET SELECTION -->
+            <QStep
+              v-if="bracketStore.provider === 'startgg'"
+              :name="3"
+              title="Select Bracket"
+              icon="account_tree"
+              :done="setupStep > 3"
+            >
+              <div class="column q-gutter-md">
+                <QSelect
+                  v-if="bracketStore.events.length"
+                  v-model="bracketStore.startggEventId"
+                  :options="bracketStore.events"
+                  option-value="id"
+                  option-label="name"
+                  emit-value
+                  map-options
+                  dense
+                  :label="t('bracketEvent')"
+                  class="underlined-field"
+                  @update:model-value="bracketStore.fetchStartggPhases"
+                />
+
+                <QSelect
+                  v-if="bracketStore.phases.length"
+                  v-model="bracketStore.startggPhaseId"
+                  :options="bracketStore.phases"
+                  option-value="id"
+                  option-label="name"
+                  emit-value
+                  map-options
+                  dense
+                  :label="t('bracketPhase')"
+                  class="underlined-field"
+                  @update:model-value="bracketStore.fetchStartggGroups"
+                />
+
+                <QSelect
+                  v-if="bracketStore.groups.length"
+                  v-model="bracketStore.startggGroupId"
+                  :options="bracketStore.groups"
+                  option-value="id"
+                  option-label="name"
+                  emit-value
+                  map-options
+                  dense
+                  :label="t('bracketPool')"
+                  class="underlined-field"
+                  @update:model-value="bracketStore.fetchStartggSets"
+                />
+              </div>
+              <QStepperNavigation>
+                <QBtn 
+                  unelevated
+                  no-caps
+                  color="primary" 
+                  :label="t('tournamentBtnContinue')" 
+                  class="primary-action-btn"
+                  @click="onContinueStep3" 
+                />
+                <QBtn 
+                  flat 
+                  no-caps
+                  color="primary" 
+                  :label="t('tournamentBtnBack')" 
+                  class="flat-back-btn q-ml-sm" 
+                  @click="setupStep = 2" 
+                />
+              </QStepperNavigation>
+            </QStep>
+
+            <!-- STEP 3: CHALLONGE TOURNAMENT SELECTION OR CREATION -->
+            <QStep
+              v-else-if="bracketStore.provider === 'challonge'"
+              :name="3"
+              :title="challongeMode === 'create' ? t('challongeCreateTitle') : t('bracketTournament')"
+              :icon="challongeMode === 'create' ? 'add_circle' : 'search'"
+              :done="setupStep > 3"
+            >
+              <!-- CHALLONGE FETCH MODE -->
+              <div
+                v-if="challongeMode === 'fetch'"
                 class="column q-gutter-md"
               >
                 <div v-if="challongeTopTournaments.length > 0">
@@ -638,108 +882,109 @@ const onPinAndFinish = () => {
                     @update:model-value="onManualUrlInput"
                   />
                 </template>
+
+                <div
+                  v-if="adminWarning"
+                  class="text-warning text-caption q-mt-sm"
+                >
+                  ⚠️ This tournament is not in your recent admin list. You can still track it, but Player Auto-import and Match Reporting will fail if you don't have permissions.
+                </div>
+
+                <QStepperNavigation>
+                  <QBtn 
+                    unelevated
+                    no-caps
+                    color="primary" 
+                    :label="t('tournamentBtnContinue')" 
+                    class="primary-action-btn"
+                    @click="onContinueChallongeFetch" 
+                  />
+                  <QBtn 
+                    flat 
+                    no-caps
+                    color="primary" 
+                    :label="t('tournamentBtnBack')" 
+                    class="flat-back-btn q-ml-sm" 
+                    @click="setupStep = 2" 
+                  />
+                </QStepperNavigation>
               </div>
 
+              <!-- CHALLONGE CREATE MODE -->
               <div
-                v-if="adminWarning"
-                class="text-warning text-caption q-mt-sm"
+                v-else
+                class="column q-gutter-md"
               >
-                ⚠️ This tournament is not in your recent admin list. You can still track it, but Player Auto-import and Match Reporting will fail if you don't have permissions.
+                <div class="text-caption text-grey-5">
+                  {{ t('challongeCreateSubtitle') }}
+                </div>
+                <QInput
+                  v-model="createForm.name"
+                  dense
+                  :label="t('challongeFieldName') + ' *'"
+                  class="underlined-field"
+                />
+                <QSelect
+                  v-model="createForm.tournamentType"
+                  :options="challongeFormatOptions"
+                  option-value="value"
+                  option-label="label"
+                  emit-value
+                  map-options
+                  dense
+                  :label="t('challongeFieldFormat')"
+                  class="underlined-field"
+                  popup-content-class="glass-panel glass-dropdown"
+                />
+                <QInput
+                  v-model="createForm.url"
+                  dense
+                  :label="t('challongeFieldUrl')"
+                  :placeholder="t('challongeFieldUrlPlaceholder')"
+                  class="underlined-field"
+                />
+                <QInput
+                  v-model="createForm.gameName"
+                  dense
+                  :label="t('challongeFieldGame')"
+                  :placeholder="t('challongeFieldGamePlaceholder')"
+                  class="underlined-field"
+                />
+                <QInput
+                  v-model="createForm.description"
+                  dense
+                  type="textarea"
+                  autogrow
+                  :label="t('challongeFieldDescription')"
+                  class="underlined-field"
+                />
+
+                <QStepperNavigation>
+                  <QBtn 
+                    unelevated
+                    no-caps
+                    color="primary" 
+                    icon="add_circle"
+                    :label="t('challongeBtnCreate')" 
+                    class="primary-action-btn"
+                    :loading="isCreatingTournament"
+                    @click="handleCreateChallongeTournament" 
+                  />
+                  <QBtn 
+                    flat 
+                    no-caps
+                    color="primary" 
+                    :label="t('tournamentBtnBack')" 
+                    class="flat-back-btn q-ml-sm" 
+                    @click="setupStep = 2" 
+                  />
+                </QStepperNavigation>
               </div>
-              <QStepperNavigation>
-                <QBtn 
-                  unelevated
-                  no-caps
-                  color="primary" 
-                  :label="t('tournamentBtnContinue')" 
-                  class="primary-action-btn"
-                  @click="onContinueStep2" 
-                />
-                <QBtn 
-                  flat 
-                  no-caps
-                  color="primary" 
-                  :label="t('tournamentBtnBack')" 
-                  class="flat-back-btn q-ml-sm" 
-                  @click="setupStep = 1" 
-                />
-              </QStepperNavigation>
             </QStep>
 
-            
+            <!-- STEP 4: READY (ALL PROVIDERS) -->
             <QStep
-              v-if="bracketStore.provider === 'startgg'"
-              :name="3"
-              title="Select Bracket"
-              icon="account_tree"
-              :done="setupStep > 3"
-            >
-              <div class="column q-gutter-md">
-                <QSelect
-                  v-if="bracketStore.events.length"
-                  v-model="bracketStore.startggEventId"
-                  :options="bracketStore.events"
-                  option-value="id"
-                  option-label="name"
-                  emit-value
-                  map-options
-                  dense
-                  :label="t('bracketEvent')"
-                  class="underlined-field"
-                  @update:model-value="bracketStore.fetchStartggPhases"
-                />
-
-                <QSelect
-                  v-if="bracketStore.phases.length"
-                  v-model="bracketStore.startggPhaseId"
-                  :options="bracketStore.phases"
-                  option-value="id"
-                  option-label="name"
-                  emit-value
-                  map-options
-                  dense
-                  :label="t('bracketPhase')"
-                  class="underlined-field"
-                  @update:model-value="bracketStore.fetchStartggGroups"
-                />
-
-                <QSelect
-                  v-if="bracketStore.groups.length"
-                  v-model="bracketStore.startggGroupId"
-                  :options="bracketStore.groups"
-                  option-value="id"
-                  option-label="name"
-                  emit-value
-                  map-options
-                  dense
-                  :label="t('bracketPool')"
-                  class="underlined-field"
-                  @update:model-value="bracketStore.fetchStartggSets"
-                />
-              </div>
-              <QStepperNavigation>
-                <QBtn 
-                  unelevated
-                  no-caps
-                  color="primary" 
-                  :label="t('tournamentBtnContinue')" 
-                  class="primary-action-btn"
-                  @click="onContinueStep3" 
-                />
-                <QBtn 
-                  flat 
-                  no-caps
-                  color="primary" 
-                  :label="t('tournamentBtnBack')" 
-                  class="flat-back-btn q-ml-sm" 
-                  @click="setupStep = 2" 
-                />
-              </QStepperNavigation>
-            </QStep>
-
-            
-            <QStep
-              :name="bracketStore.provider === 'startgg' ? 4 : 3"
+              :name="4"
               title="Ready"
               icon="check"
             >
@@ -785,13 +1030,14 @@ const onPinAndFinish = () => {
                   :label="t('tournamentBtnBack')" 
                   class="flat-back-btn q-mt-sm full-width" 
                   :disable="playersImported"
-                  @click="setupStep = bracketStore.provider === 'startgg' ? 3 : 2" 
+                  @click="setupStep = 3" 
                 />
               </QStepperNavigation>
             </QStep>
           </QStepper>
         </QCard>
       </QDialog>
+
 
       <QCard 
         class="glass-panel matches-card full-width dashboard-stagger-1"
