@@ -9,6 +9,7 @@ import startggSvgUrl from '../assets/startgg.svg';
 import BracketMatchCard from '../components/BracketMatchCard.vue';
 import TournamentStreamQueueTab from '../components/TournamentStreamQueueTab.vue';
 import TournamentStandingsDialog from '../components/TournamentStandingsDialog.vue';
+import TournamentManageDialog from '../components/TournamentManageDialog.vue';
 import { useIntegration } from '../composables/useIntegration';
 import { useBracketStore } from '../stores/bracket';
 import { usePlayersStore } from '../stores/players';
@@ -386,6 +387,7 @@ const pinnedTournamentName = computed(() => {
 
 const isSetupDialogOpen = ref(false);
 const isStandingsDialogOpen = ref(false);
+const isManageDialogOpen = ref(false);
 const playersImported = ref(false);
 const isImportingPlayers = ref(false);
 
@@ -442,6 +444,12 @@ const onPinAndFinish = () => {
       <TournamentStandingsDialog
         v-model="isStandingsDialogOpen"
         :event-id="bracketStore.startggEventId || bracketStore.attached.startggEventId || undefined"
+      />
+
+      <!-- TOURNAMENT MANAGE MODAL (CHALLONGE) -->
+      <TournamentManageDialog
+        v-model="isManageDialogOpen"
+        :slug="bracketStore.challongeTournamentSlug || bracketStore.attached.tournamentSlug || ''"
       />
 
       <!-- TOURNAMENT SETUP MODAL -->
@@ -1081,6 +1089,16 @@ const onPinAndFinish = () => {
                   @click="isStandingsDialogOpen = true"
                 />
                 <QBtn
+                  v-if="bracketStore.provider === 'challonge' && hasPinnedTournament"
+                  outline
+                  no-caps
+                  color="primary"
+                  icon="tune"
+                  :label="t('challongeBtnManage')"
+                  class="q-ml-sm"
+                  @click="isManageDialogOpen = true"
+                />
+                <QBtn
                   unelevated
                   no-caps
                   color="primary"
@@ -1160,6 +1178,16 @@ const onPinAndFinish = () => {
                   :label="t('standingsTitle')"
                   class="q-ml-sm"
                   @click="isStandingsDialogOpen = true"
+                />
+                <QBtn
+                  v-if="bracketStore.provider === 'challonge' && hasPinnedTournament"
+                  outline
+                  no-caps
+                  color="primary"
+                  icon="tune"
+                  :label="t('challongeBtnManage')"
+                  class="q-ml-sm"
+                  @click="isManageDialogOpen = true"
                 />
               </div>
               
