@@ -14,6 +14,9 @@ import type {
   BracketStanding,
   CreateTournamentParams,
   RecentTournament,
+  ImportedPlayer,
+  TournamentStateAction,
+  BulkParticipantInput,
 } from '../../../types';
 import { syncStateWithReplicant } from './store-sync';
 import { debounce } from 'quasar';
@@ -345,8 +348,105 @@ export const useBracketStore = defineStore('bracket', () => {
     }
   };
 
+  const changeChallongeTournamentState = async (slug: string, action: TournamentStateAction) => {
+    loading.value = true;
+    error.value = null;
+    try {
+      await nodecg.sendMessage('challonge:changeTournamentState', { slug, action });
+      await fetchChallongeMatches(slug);
+      notifySuccess(t('challongeStateChangeSuccess'));
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : t('challongeStateChangeFailed'));
+      error.value = msg;
+      notifyError(msg);
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
 
+  const fetchChallongeParticipants = async (slug: string): Promise<ImportedPlayer[]> => {
+    loading.value = true;
+    error.value = null;
+    try {
+      return await nodecg.sendMessage('challonge:fetchTournamentPlayers', { slug });
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : 'Error fetching participants');
+      error.value = msg;
+      notifyError(msg);
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
 
+  const createChallongeParticipant = async (slug: string, data: { name: string; seed?: number; misc?: string }): Promise<ImportedPlayer[]> => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const players: ImportedPlayer[] = await nodecg.sendMessage('challonge:createParticipant', { slug, ...data });
+      notifySuccess(t('challongeAddParticipantSuccess'));
+      return players;
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : t('challongeAddParticipantFailed'));
+      error.value = msg;
+      notifyError(msg);
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const bulkCreateChallongeParticipants = async (slug: string, participants: BulkParticipantInput[]): Promise<ImportedPlayer[]> => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const players: ImportedPlayer[] = await nodecg.sendMessage('challonge:bulkCreateParticipants', { slug, participants });
+      notifySuccess(t('challongeBulkAddSuccess'));
+      return players;
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : t('challongeBulkAddFailed'));
+      error.value = msg;
+      notifyError(msg);
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const randomizeChallongeSeeds = async (slug: string): Promise<ImportedPlayer[]> => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const players: ImportedPlayer[] = await nodecg.sendMessage('challonge:randomizeParticipants', { slug });
+      notifySuccess(t('challongeRandomizeSuccess'));
+      return players;
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : t('challongeRandomizeFailed'));
+      error.value = msg;
+      notifyError(msg);
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const deleteChallongeParticipant = async (slug: string, participantId: string): Promise<ImportedPlayer[]> => {
+    loading.value = true;
+    error.value = null;
+    try {
+      const players: ImportedPlayer[] = await nodecg.sendMessage('challonge:deleteParticipant', { slug, participantId });
+      notifySuccess(t('challongeDeleteParticipantSuccess'));
+      return players;
+    } catch (e) {
+      const msg = typeof e === 'string' ? e : (e instanceof Error ? e.message : t('challongeDeleteParticipantFailed'));
+      error.value = msg;
+      notifyError(msg);
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  };
 
   const attachTournament = () => {
     if (provider.value === 'startgg' && startggTournamentSlug.value) {
@@ -449,7 +549,13 @@ export const useBracketStore = defineStore('bracket', () => {
     fetchStartggStreamQueue,
     fetchStartggStandings,
     fetchChallongeMatches: debouncedFetchChallongeMatches,
+    fetchChallongeParticipants,
     createChallongeTournament,
+    changeChallongeTournamentState,
+    createChallongeParticipant,
+    bulkCreateChallongeParticipants,
+    randomizeChallongeSeeds,
+    deleteChallongeParticipant,
     reportMatch,
 
     resetMatch,
