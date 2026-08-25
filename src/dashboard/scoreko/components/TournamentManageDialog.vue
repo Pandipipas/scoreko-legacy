@@ -359,116 +359,124 @@ const sortedParticipants = computed(() => {
         <!-- TAB 1: LIFECYCLE -->
         <QTabPanel
           name="lifecycle"
-          class="q-pa-md column q-gutter-y-md"
+          class="q-pa-md"
         >
-          <div class="text-caption text-muted">
-            {{ t('challongeLifecycleSubtitle') }}
-          </div>
-
-          <div class="column q-gutter-y-sm">
-            <!-- START TOURNAMENT CARD -->
-            <div
-              class="lifecycle-card row items-center justify-between q-pa-md cursor-pointer start-card"
-              :class="{ 'card-disabled': isChangingState }"
-              @click="confirmChangeState('start')"
-            >
-              <div class="row items-center q-gutter-x-md">
-                <div class="icon-avatar start-avatar row items-center justify-center">
-                  <QIcon
-                    name="play_arrow"
-                    size="24px"
-                  />
-                </div>
-                <div class="column">
-                  <div class="text-subtitle2 text-weight-bold text-base">
-                    {{ t('challongeBtnStartTournament') }}
-                  </div>
-                  <div class="text-caption text-muted lifecycle-desc">
-                    {{ t('challongeDescStartTournament') }}
-                  </div>
-                </div>
-              </div>
-              <QBtn
-                unelevated
-                dense
-                no-caps
-                color="positive"
-                icon="play_arrow"
-                :label="t('challongeBtnStartTournament')"
-                :loading="isChangingState"
-                class="action-btn"
-                @click.stop="confirmChangeState('start')"
-              />
+          <div class="column q-gutter-y-md manage-tab-content">
+            <div class="text-caption text-muted">
+              {{ t('challongeLifecycleSubtitle') }}
             </div>
 
-            <!-- FINALIZE TOURNAMENT CARD -->
-            <div
-              class="lifecycle-card row items-center justify-between q-pa-md cursor-pointer finalize-card"
-              :class="{ 'card-disabled': isChangingState }"
-              @click="confirmChangeState('finalize')"
-            >
-              <div class="row items-center q-gutter-x-md">
-                <div class="icon-avatar finalize-avatar row items-center justify-center">
-                  <QIcon
-                    name="emoji_events"
-                    size="24px"
+            <div class="column q-gutter-y-sm">
+              <!-- START TOURNAMENT CARD -->
+              <div
+                class="lifecycle-card row items-center no-wrap justify-between q-pa-md cursor-pointer start-card"
+                :class="{ 'card-disabled': isChangingState }"
+                @click="confirmChangeState('start')"
+              >
+                <div class="row items-center no-wrap q-gutter-x-md col">
+                  <div class="icon-avatar start-avatar row items-center justify-center">
+                    <QIcon
+                      name="play_arrow"
+                      size="24px"
+                    />
+                  </div>
+                  <div class="column col">
+                    <div class="text-subtitle2 text-weight-bold text-base">
+                      {{ t('challongeBtnStartTournament') }}
+                    </div>
+                    <div class="text-caption text-muted lifecycle-desc">
+                      {{ t('challongeDescStartTournament') }}
+                    </div>
+                  </div>
+                </div>
+                <div class="col-auto q-ml-md">
+                  <QBtn
+                    unelevated
+                    dense
+                    no-caps
+                    color="positive"
+                    icon="play_arrow"
+                    :label="t('challongeBtnStartTournament')"
+                    :loading="isChangingState"
+                    class="action-btn"
+                    @click.stop="confirmChangeState('start')"
                   />
                 </div>
-                <div class="column">
-                  <div class="text-subtitle2 text-weight-bold text-base">
-                    {{ t('challongeBtnFinalizeTournament') }}
-                  </div>
-                  <div class="text-caption text-muted lifecycle-desc">
-                    {{ t('challongeDescFinalizeTournament') }}
-                  </div>
-                </div>
               </div>
-              <QBtn
-                outline
-                dense
-                no-caps
-                color="warning"
-                icon="flag"
-                :label="t('challongeBtnFinalizeTournament')"
-                :loading="isChangingState"
-                class="action-btn"
-                @click.stop="confirmChangeState('finalize')"
-              />
-            </div>
 
-            <!-- RESET TOURNAMENT CARD -->
-            <div
-              class="lifecycle-card row items-center justify-between q-pa-md cursor-pointer reset-card"
-              :class="{ 'card-disabled': isChangingState }"
-              @click="confirmChangeState('reset')"
-            >
-              <div class="row items-center q-gutter-x-md">
-                <div class="icon-avatar reset-avatar row items-center justify-center">
-                  <QIcon
-                    name="replay"
-                    size="24px"
+              <!-- FINALIZE TOURNAMENT CARD -->
+              <div
+                class="lifecycle-card row items-center no-wrap justify-between q-pa-md cursor-pointer finalize-card"
+                :class="{ 'card-disabled': isChangingState }"
+                @click="confirmChangeState('finalize')"
+              >
+                <div class="row items-center no-wrap q-gutter-x-md col">
+                  <div class="icon-avatar finalize-avatar row items-center justify-center">
+                    <QIcon
+                      name="emoji_events"
+                      size="24px"
+                    />
+                  </div>
+                  <div class="column col">
+                    <div class="text-subtitle2 text-weight-bold text-base">
+                      {{ t('challongeBtnFinalizeTournament') }}
+                    </div>
+                    <div class="text-caption text-muted lifecycle-desc">
+                      {{ t('challongeDescFinalizeTournament') }}
+                    </div>
+                  </div>
+                </div>
+                <div class="col-auto q-ml-md">
+                  <QBtn
+                    outline
+                    dense
+                    no-caps
+                    color="warning"
+                    icon="flag"
+                    :label="t('challongeBtnFinalizeTournament')"
+                    :loading="isChangingState"
+                    class="action-btn"
+                    @click.stop="confirmChangeState('finalize')"
                   />
                 </div>
-                <div class="column">
-                  <div class="text-subtitle2 text-weight-bold text-base">
-                    {{ t('challongeBtnResetTournament') }}
+              </div>
+
+              <!-- RESET TOURNAMENT CARD -->
+              <div
+                class="lifecycle-card row items-center no-wrap justify-between q-pa-md cursor-pointer reset-card"
+                :class="{ 'card-disabled': isChangingState }"
+                @click="confirmChangeState('reset')"
+              >
+                <div class="row items-center no-wrap q-gutter-x-md col">
+                  <div class="icon-avatar reset-avatar row items-center justify-center">
+                    <QIcon
+                      name="replay"
+                      size="24px"
+                    />
                   </div>
-                  <div class="text-caption text-muted lifecycle-desc">
-                    {{ t('challongeDescResetTournament') }}
+                  <div class="column col">
+                    <div class="text-subtitle2 text-weight-bold text-base">
+                      {{ t('challongeBtnResetTournament') }}
+                    </div>
+                    <div class="text-caption text-muted lifecycle-desc">
+                      {{ t('challongeDescResetTournament') }}
+                    </div>
                   </div>
                 </div>
+                <div class="col-auto q-ml-md">
+                  <QBtn
+                    flat
+                    dense
+                    no-caps
+                    color="negative"
+                    icon="replay"
+                    :label="t('challongeBtnResetTournament')"
+                    :loading="isChangingState"
+                    class="action-btn"
+                    @click.stop="confirmChangeState('reset')"
+                  />
+                </div>
               </div>
-              <QBtn
-                flat
-                dense
-                no-caps
-                color="negative"
-                icon="replay"
-                :label="t('challongeBtnResetTournament')"
-                :loading="isChangingState"
-                class="action-btn"
-                @click.stop="confirmChangeState('reset')"
-              />
             </div>
           </div>
         </QTabPanel>
@@ -476,197 +484,203 @@ const sortedParticipants = computed(() => {
         <!-- TAB 2: PARTICIPANTS -->
         <QTabPanel
           name="participants"
-          class="q-pa-md column q-gutter-y-sm"
+          class="q-pa-md"
         >
-          <!-- QUICK ADD BAR -->
-          <div class="row q-col-gutter-sm items-center">
-            <div class="col">
-              <QInput
-                v-model="newPlayerName"
-                dense
-                :placeholder="t('challongeAddPlayerPlaceholder')"
-                class="underlined-field"
-                @keydown.enter="handleAddParticipant"
-              />
-            </div>
-            <div
-              class="col-auto"
-              style="width: 90px;"
-            >
-              <QInput
-                v-model.number="newPlayerSeed"
-                type="number"
-                dense
-                :placeholder="t('challongeSeedPlaceholder')"
-                class="underlined-field"
-                @keydown.enter="handleAddParticipant"
-              />
-            </div>
-            <div class="col-auto">
-              <QBtn
-                unelevated
-                dense
-                no-caps
-                color="primary"
-                icon="add"
-                :label="t('challongeAddSingleBtn')"
-                class="primary-action-btn"
-                :loading="isAddingSingle"
-                :disable="!newPlayerName.trim()"
-                @click="handleAddParticipant"
-              />
-            </div>
-          </div>
-
-          <!-- CONTROLS ROW -->
-          <div class="row items-center justify-between q-py-xs border-bottom-subtle">
-            <div class="text-caption text-muted text-weight-medium font-mono">
-              {{ t('challongeParticipantsCount', { count: participants.length }) }}
-            </div>
-            <div class="row items-center q-gutter-x-xs">
-              <QBtn
-                flat
-                dense
-                no-caps
-                size="sm"
-                color="primary"
-                icon="shuffle"
-                :label="t('challongeBtnRandomize')"
-                class="subtle-action-btn"
-                :loading="isRandomizing"
-                :disable="participants.length < 2"
-                @click="confirmRandomizeSeeds"
+          <div class="column q-gutter-y-sm manage-tab-content">
+            <!-- QUICK ADD BAR -->
+            <div class="row q-col-gutter-sm items-center no-wrap">
+              <div class="col">
+                <QInput
+                  v-model="newPlayerName"
+                  dense
+                  :placeholder="t('challongeAddPlayerPlaceholder')"
+                  class="underlined-field"
+                  @keydown.enter="handleAddParticipant"
+                />
+              </div>
+              <div
+                class="col-auto"
+                style="width: 90px;"
               >
-                <QTooltip class="glass-tooltip">
-                  {{ t('challongeRandomizeTitle') }}
-                </QTooltip>
-              </QBtn>
-              <QBtn
-                flat
-                round
-                dense
-                size="sm"
-                icon="refresh"
-                class="subtle-action-btn text-muted"
-                :loading="loadingParticipants"
-                @click="loadParticipants"
-              >
-                <QTooltip class="glass-tooltip">
-                  {{ t('tooltipRefreshMatches') }}
-                </QTooltip>
-              </QBtn>
-            </div>
-          </div>
-
-          <!-- PARTICIPANTS LIST -->
-          <div class="col-grow participant-list-container">
-            <div
-              v-if="loadingParticipants && participants.length === 0"
-              class="row justify-center items-center q-py-lg"
-            >
-              <QSpinner
-                color="primary"
-                size="2em"
-              />
-            </div>
-
-            <div
-              v-else-if="participants.length === 0"
-              class="column items-center justify-center q-py-lg text-center text-muted"
-            >
-              <QIcon
-                name="person_off"
-                size="36px"
-                class="q-mb-xs"
-              />
-              <div class="text-caption">
-                {{ t('challongeNoParticipants') }}
+                <QInput
+                  v-model.number="newPlayerSeed"
+                  type="number"
+                  dense
+                  :placeholder="t('challongeSeedPlaceholder')"
+                  class="underlined-field"
+                  @keydown.enter="handleAddParticipant"
+                />
+              </div>
+              <div class="col-auto">
+                <QBtn
+                  unelevated
+                  dense
+                  no-caps
+                  color="primary"
+                  icon="add"
+                  :label="t('challongeAddSingleBtn')"
+                  class="primary-action-btn no-wrap"
+                  :loading="isAddingSingle"
+                  :disable="!newPlayerName.trim()"
+                  @click="handleAddParticipant"
+                />
               </div>
             </div>
 
-            <QScrollArea
-              v-else
-              class="participant-scroll-area"
-            >
-              <div class="column q-gutter-y-xs q-pr-sm">
-                <div
-                  v-for="p in sortedParticipants"
-                  :key="p.id"
-                  class="participant-row row items-center justify-between q-px-sm q-py-xs"
+            <!-- CONTROLS ROW -->
+            <div class="row items-center justify-between no-wrap q-py-xs border-bottom-subtle">
+              <div class="text-caption text-muted text-weight-medium font-mono">
+                {{ t('challongeParticipantsCount', { count: participants.length }) }}
+              </div>
+              <div class="row items-center q-gutter-x-xs no-wrap">
+                <QBtn
+                  flat
+                  dense
+                  no-caps
+                  size="sm"
+                  color="primary"
+                  icon="shuffle"
+                  :label="t('challongeBtnRandomize')"
+                  class="subtle-action-btn no-wrap"
+                  :loading="isRandomizing"
+                  :disable="participants.length < 2"
+                  @click="confirmRandomizeSeeds"
                 >
-                  <div class="row items-center q-gutter-x-sm no-wrap">
-                    <span
-                      class="seed-badge font-mono text-weight-bold"
-                      :class="p.seed ? 'seed-active' : 'seed-none'"
-                    >
-                      #{{ p.seed || '-' }}
-                    </span>
-                    <span class="text-body2 text-weight-medium text-base ellipsis">
-                      {{ p.gamertag }}
-                    </span>
-                    <span
-                      v-if="p.team"
-                      class="text-caption text-grey-5"
-                    >
-                      ({{ p.team }})
-                    </span>
-                  </div>
+                  <QTooltip class="glass-tooltip">
+                    {{ t('challongeRandomizeTitle') }}
+                  </QTooltip>
+                </QBtn>
+                <QBtn
+                  flat
+                  round
+                  dense
+                  size="sm"
+                  icon="refresh"
+                  class="subtle-action-btn text-muted"
+                  :loading="loadingParticipants"
+                  @click="loadParticipants"
+                >
+                  <QTooltip class="glass-tooltip">
+                    {{ t('tooltipRefreshMatches') }}
+                  </QTooltip>
+                </QBtn>
+              </div>
+            </div>
 
-                  <QBtn
-                    flat
-                    round
-                    dense
-                    size="sm"
-                    icon="delete_outline"
-                    color="grey-6"
-                    class="delete-btn"
-                    :loading="isDeletingId === p.id"
-                    @click="confirmDeleteParticipant(p)"
-                  >
-                    <QTooltip class="glass-tooltip">
-                      {{ t('challongeDeleteParticipantTitle') }}
-                    </QTooltip>
-                  </QBtn>
+            <!-- PARTICIPANTS LIST -->
+            <div class="participant-list-container">
+              <div
+                v-if="loadingParticipants && participants.length === 0"
+                class="row justify-center items-center q-py-lg"
+              >
+                <QSpinner
+                  color="primary"
+                  size="2em"
+                />
+              </div>
+
+              <div
+                v-else-if="participants.length === 0"
+                class="column items-center justify-center q-py-lg text-center text-muted"
+              >
+                <QIcon
+                  name="person_off"
+                  size="36px"
+                  class="q-mb-xs"
+                />
+                <div class="text-caption">
+                  {{ t('challongeNoParticipants') }}
                 </div>
               </div>
-            </QScrollArea>
+
+              <QScrollArea
+                v-else
+                class="participant-scroll-area"
+              >
+                <div class="column q-gutter-y-xs q-pr-sm">
+                  <div
+                    v-for="p in sortedParticipants"
+                    :key="p.id"
+                    class="participant-row row items-center justify-between no-wrap q-px-sm q-py-xs"
+                  >
+                    <div class="row items-center q-gutter-x-sm no-wrap col min-width-0">
+                      <span
+                        class="seed-badge font-mono text-weight-bold col-auto"
+                        :class="p.seed ? 'seed-active' : 'seed-none'"
+                      >
+                        #{{ p.seed || '-' }}
+                      </span>
+                      <span class="text-body2 text-weight-medium text-base ellipsis col">
+                        {{ p.gamertag }}
+                      </span>
+                      <span
+                        v-if="p.team"
+                        class="text-caption text-grey-5 col-auto"
+                      >
+                        ({{ p.team }})
+                      </span>
+                    </div>
+
+                    <div class="col-auto q-ml-sm">
+                      <QBtn
+                        flat
+                        round
+                        dense
+                        size="sm"
+                        icon="delete_outline"
+                        color="grey-6"
+                        class="delete-btn"
+                        :loading="isDeletingId === p.id"
+                        @click="confirmDeleteParticipant(p)"
+                      >
+                        <QTooltip class="glass-tooltip">
+                          {{ t('challongeDeleteParticipantTitle') }}
+                        </QTooltip>
+                      </QBtn>
+                    </div>
+                  </div>
+                </div>
+              </QScrollArea>
+            </div>
           </div>
         </QTabPanel>
 
         <!-- TAB 3: BULK ADD -->
         <QTabPanel
           name="bulkAdd"
-          class="q-pa-md column q-gutter-y-sm"
+          class="q-pa-md"
         >
-          <div class="text-caption text-muted">
-            {{ t('challongeBulkInstructions') }}
-          </div>
+          <div class="column q-gutter-y-sm manage-tab-content">
+            <div class="text-caption text-muted">
+              {{ t('challongeBulkInstructions') }}
+            </div>
 
-          <QInput
-            v-model="bulkInputText"
-            type="textarea"
-            filled
-            dense
-            rows="7"
-            :placeholder="`1 | Daigo\n2 | Tokido\n3 | Justin Wong\n4 | SonicFox`"
-            class="dark-input font-mono bulk-textarea"
-          />
-
-          <div class="row items-center justify-between q-mt-xs">
-            <span class="text-caption text-grey-6 font-mono">
-              {{ t('challongeBulkFormatHint') }}
-            </span>
-            <QBtn
-              unelevated
-              no-caps
-              color="primary"
-              icon="playlist_add"
-              :label="t('challongeBtnAddBulk')"
-              class="primary-action-btn"
-              :loading="isBulkAdding"
-              :disable="!bulkInputText.trim()"
-              @click="handleBulkAdd"
+            <QInput
+              v-model="bulkInputText"
+              type="textarea"
+              filled
+              dense
+              rows="7"
+              :placeholder="`1 | Daigo\n2 | Tokido\n3 | Justin Wong\n4 | SonicFox`"
+              class="dark-input font-mono bulk-textarea"
             />
+
+            <div class="row items-center justify-between no-wrap q-mt-xs">
+              <span class="text-caption text-grey-6 font-mono">
+                {{ t('challongeBulkFormatHint') }}
+              </span>
+              <QBtn
+                unelevated
+                no-caps
+                color="primary"
+                icon="playlist_add"
+                :label="t('challongeBtnAddBulk')"
+                class="primary-action-btn no-wrap"
+                :loading="isBulkAdding"
+                :disable="!bulkInputText.trim()"
+                @click="handleBulkAdd"
+              />
+            </div>
           </div>
         </QTabPanel>
       </QTabPanels>
@@ -691,6 +705,7 @@ const sortedParticipants = computed(() => {
   width: 620px;
   max-width: 95vw;
   border-radius: 8px;
+  overflow: hidden;
 }
 
 .border-bottom-subtle {
@@ -702,9 +717,12 @@ const sortedParticipants = computed(() => {
 }
 
 .tab-panels-fixed {
-  height: 380px;
-  max-height: 380px;
-  overflow: hidden;
+  min-height: 380px;
+  overflow-x: hidden;
+}
+
+.manage-tab-content {
+  width: 100%;
 }
 
 .lifecycle-card {
@@ -712,6 +730,7 @@ const sortedParticipants = computed(() => {
   background: var(--bg-subtle);
   border: 1px solid var(--border-subtle);
   transition: all 0.2s ease;
+  min-height: 68px;
 
   &:hover {
     border-color: var(--border-medium);
@@ -747,13 +766,13 @@ const sortedParticipants = computed(() => {
 }
 
 .lifecycle-desc {
-  max-width: 320px;
   line-height: 1.3;
 }
 
 .action-btn {
-  padding: 4px 12px;
+  padding: 6px 14px;
   font-size: 0.85rem;
+  white-space: nowrap;
 }
 
 .participant-list-container {
@@ -811,5 +830,9 @@ const sortedParticipants = computed(() => {
 
 .bulk-textarea {
   font-size: 0.85rem;
+}
+
+.min-width-0 {
+  min-width: 0;
 }
 </style>
