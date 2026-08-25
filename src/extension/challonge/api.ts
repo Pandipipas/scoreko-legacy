@@ -244,6 +244,15 @@ export const parseImportedPlayers = (payload: unknown): ImportedPlayer[] => {
     const gamertag = pipeMatch ? pipeMatch[2].trim() : rawDisplayName;
     const team = String(attributes.team_name ?? '').trim() || teamFromName;
 
+    const rawSeed = attributes.seed ?? candidate.seed ?? attributes.seed_number ?? candidate.seed_number;
+    let seed: number | undefined = undefined;
+    if (typeof rawSeed === 'number' && Number.isFinite(rawSeed)) {
+      seed = rawSeed;
+    } else if (typeof rawSeed === 'string' && rawSeed.trim() !== '') {
+      const parsed = Number(rawSeed);
+      if (Number.isFinite(parsed)) seed = parsed;
+    }
+
     map.set(id, {
       id,
       gamertag,
@@ -253,6 +262,7 @@ export const parseImportedPlayers = (payload: unknown): ImportedPlayer[] => {
       twitter: String(attributes.twitter_handle ?? attributes.twitter ?? '').trim(),
       avatarUrl: String(attributes.attached_participant_portrait_url ?? attributes.portrait_url ?? attributes.icon_url ?? '').trim(),
       challongeId: id,
+      seed,
     });
   };
 
@@ -269,13 +279,27 @@ export const parseImportedPlayers = (payload: unknown): ImportedPlayer[] => {
   }
 
   if (typeof payload === 'object' && payload !== null) {
-    const data = (payload as Record<string, unknown>).data;
+    const p = payload as Record<string, unknown>;
+    const data = p.data;
     if (Array.isArray(data)) {
       for (const row of data as unknown[]) {
         if (typeof row === 'object' && row !== null) {
           push(row as Record<string, unknown>);
         }
       }
+    } else if (Array.isArray(p.participants)) {
+      for (const row of p.participants as unknown[]) {
+        const wrapper = row as Record<string, unknown>;
+        const participant =
+          typeof wrapper.participant === 'object' && wrapper.participant !== null
+            ? (wrapper.participant as Record<string, unknown>)
+            : wrapper;
+        push(participant);
+      }
+    } else if (typeof p.participant === 'object' && p.participant !== null) {
+      push(p.participant as Record<string, unknown>);
+    } else if (data && typeof data === 'object') {
+      push(data as Record<string, unknown>);
     }
   }
 
