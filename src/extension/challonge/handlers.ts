@@ -5,13 +5,16 @@ import { oauthServer, getOAuthMode } from './oauth.js';
 import { tokenStore } from '../util/token-store.js';
 import { normalizeTournamentSlug } from './api.js';
 import { getStringProp, sendAck } from '../util/helpers.js';
+import type { CreateTournamentParams } from '../util/types.js';
 import {
   fetchRecentTournaments,
   fetchTournamentPlayers,
   fetchMatches,
   reportMatch,
   changeMatchState,
+  createTournament,
 } from './service.js';
+
 
 export function setupHandlers() {
 
@@ -177,5 +180,24 @@ export function setupHandlers() {
       }
     }
   }));
+
+  nodecg.listenFor('challonge:createTournament', createHandler({
+    requiresToken: 'challonge',
+    handler: async (payload: unknown, ack, { token }) => {
+      const params = payload as CreateTournamentParams;
+      if (!params || typeof params.name !== 'string' || !params.name.trim()) {
+        sendAck(ack, 'Tournament name is required');
+        return;
+      }
+
+      try {
+        const tournament = await createTournament(params, token);
+        sendAck(ack, null, tournament);
+      } catch (error) {
+        sendAck(ack, error instanceof Error ? error.message : 'Unknown error while creating tournament');
+      }
+    }
+  }));
 }
+
 

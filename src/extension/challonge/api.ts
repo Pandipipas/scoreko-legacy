@@ -192,13 +192,22 @@ export const parseRecentTournaments = (payload: unknown): RecentTournament[] => 
   }
 
   if (typeof payload === 'object' && payload !== null) {
-    const data = (payload as Record<string, unknown>).data;
+    const p = payload as Record<string, unknown>;
+    if (p.tournament && typeof p.tournament === 'object' && p.tournament !== null) {
+      push(p.tournament as Record<string, unknown>);
+      return rows;
+    }
+    const data = p.data;
     if (Array.isArray(data)) {
       for (const row of data as unknown[]) {
         if (typeof row === 'object' && row !== null) {
           push(row as Record<string, unknown>);
         }
       }
+    } else if (data && typeof data === 'object' && data !== null) {
+      push(data as Record<string, unknown>);
+    } else {
+      push(p);
     }
   }
 
