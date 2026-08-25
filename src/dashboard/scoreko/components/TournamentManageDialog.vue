@@ -391,14 +391,13 @@ const sortedParticipants = computed(() => {
                 </div>
                 <div class="col-auto q-ml-md">
                   <QBtn
-                    unelevated
+                    flat
                     dense
                     no-caps
-                    color="positive"
                     icon="play_arrow"
                     :label="t('challongeBtnStartTournament')"
                     :loading="isChangingState"
-                    class="action-btn"
+                    class="lifecycle-btn lifecycle-btn-start"
                     @click.stop="confirmChangeState('start')"
                   />
                 </div>
@@ -428,14 +427,13 @@ const sortedParticipants = computed(() => {
                 </div>
                 <div class="col-auto q-ml-md">
                   <QBtn
-                    outline
+                    flat
                     dense
                     no-caps
-                    color="warning"
-                    icon="flag"
+                    icon="emoji_events"
                     :label="t('challongeBtnFinalizeTournament')"
                     :loading="isChangingState"
-                    class="action-btn"
+                    class="lifecycle-btn lifecycle-btn-finalize"
                     @click.stop="confirmChangeState('finalize')"
                   />
                 </div>
@@ -468,11 +466,10 @@ const sortedParticipants = computed(() => {
                     flat
                     dense
                     no-caps
-                    color="negative"
                     icon="replay"
                     :label="t('challongeBtnResetTournament')"
                     :loading="isChangingState"
-                    class="action-btn"
+                    class="lifecycle-btn lifecycle-btn-reset"
                     @click.stop="confirmChangeState('reset')"
                   />
                 </div>
@@ -733,8 +730,19 @@ const sortedParticipants = computed(() => {
   min-height: 68px;
 
   &:hover {
-    border-color: var(--border-medium);
     background: rgba(255, 255, 255, 0.08);
+  }
+
+  &.start-card:hover {
+    border-color: rgba(33, 186, 69, 0.4);
+  }
+
+  &.finalize-card:hover {
+    border-color: rgba(242, 192, 55, 0.4);
+  }
+
+  &.reset-card:hover {
+    border-color: rgba(239, 68, 68, 0.4);
   }
 
   &.card-disabled {
@@ -751,17 +759,17 @@ const sortedParticipants = computed(() => {
 
   &.start-avatar {
     background: rgba(33, 186, 69, 0.15);
-    color: #21ba45;
+    color: #4ade80;
   }
 
   &.finalize-avatar {
     background: rgba(242, 192, 55, 0.15);
-    color: #f2c037;
+    color: #facc15;
   }
 
   &.reset-avatar {
-    background: rgba(193, 0, 21, 0.15);
-    color: #c10015;
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
   }
 }
 
@@ -769,10 +777,53 @@ const sortedParticipants = computed(() => {
   line-height: 1.3;
 }
 
-.action-btn {
-  padding: 6px 14px;
+.lifecycle-btn {
+  font-weight: 600;
   font-size: 0.85rem;
+  padding: 6px 14px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
   white-space: nowrap;
+
+  &.lifecycle-btn-start {
+    background: rgba(33, 186, 69, 0.15) !important;
+    border: 1px solid rgba(33, 186, 69, 0.4) !important;
+    color: #4ade80 !important;
+
+    &:hover {
+      background: rgba(33, 186, 69, 0.28) !important;
+      border-color: rgba(33, 186, 69, 0.65) !important;
+      box-shadow: 0 0 12px rgba(33, 186, 69, 0.25);
+    }
+  }
+
+  &.lifecycle-btn-finalize {
+    background: rgba(242, 192, 55, 0.15) !important;
+    border: 1px solid rgba(242, 192, 55, 0.4) !important;
+    color: #facc15 !important;
+
+    &:hover {
+      background: rgba(242, 192, 55, 0.28) !important;
+      border-color: rgba(242, 192, 55, 0.65) !important;
+      box-shadow: 0 0 12px rgba(242, 192, 55, 0.25);
+    }
+  }
+
+  &.lifecycle-btn-reset {
+    background: rgba(239, 68, 68, 0.15) !important;
+    border: 1px solid rgba(239, 68, 68, 0.4) !important;
+    color: #f87171 !important;
+
+    &:hover {
+      background: rgba(239, 68, 68, 0.28) !important;
+      border-color: rgba(239, 68, 68, 0.65) !important;
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.25);
+    }
+  }
+
+  &:active {
+    transform: scale(0.96);
+  }
 }
 
 .participant-list-container {

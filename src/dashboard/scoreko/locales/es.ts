@@ -459,7 +459,9 @@ export default {
   // TOURNAMENT HUB
   // =============================================================================
   tournamentBtnBack: "Atrás",
+  tournamentBtnChange: "Cambiar",
   tournamentBtnContinue: "Continuar",
+  tournamentBtnDetach: "Desvincular",
   tournamentChallongeNotConnected: "Challonge no está conectado. Configúralo en Ajustes.",
   tournamentInvalidChallongeUrl: "URL de Challonge inválida",
   tournamentInvalidStartggUrl: "URL de start.gg inválida",

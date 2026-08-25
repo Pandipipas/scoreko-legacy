@@ -1064,7 +1064,7 @@ const onPinAndFinish = () => {
                   no-caps
                   color="primary"
                   icon="settings"
-                  label="Change"
+                  :label="t('tournamentBtnChange')"
                   class="q-ml-md"
                   @click="isSetupDialogOpen = true"
                 />
@@ -1073,9 +1073,9 @@ const onPinAndFinish = () => {
                   flat
                   no-caps
                   color="negative"
-                  icon="close"
-                  label="Detach"
-                  class="q-ml-sm"
+                  icon="link_off"
+                  :label="t('tournamentBtnDetach')"
+                  class="subtle-action-btn q-ml-sm"
                   @click="bracketStore.detachTournament()"
                 />
                 <QBtn
@@ -1136,7 +1136,7 @@ const onPinAndFinish = () => {
                   no-caps
                   color="primary"
                   icon="settings"
-                  label="Change"
+                  :label="t('tournamentBtnChange')"
                   class="q-ml-md"
                   @click="isSetupDialogOpen = true"
                 />
@@ -1145,9 +1145,9 @@ const onPinAndFinish = () => {
                   flat
                   no-caps
                   color="negative"
-                  icon="close"
-                  label="Detach"
-                  class="q-ml-sm"
+                  icon="link_off"
+                  :label="t('tournamentBtnDetach')"
+                  class="subtle-action-btn q-ml-sm"
                   @click="bracketStore.detachTournament()"
                 />
                 <QBtn
