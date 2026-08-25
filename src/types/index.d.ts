@@ -23,6 +23,15 @@ export interface ImportedPlayer {
   avatarUrl?: string;
   startggId?: string;
   challongeId?: string;
+  seed?: number;
+}
+
+export type TournamentStateAction = 'start' | 'finalize' | 'reset';
+
+export interface BulkParticipantInput {
+  name: string;
+  seed?: number;
+  misc?: string;
 }
 
 export interface OAuthTokenResponse {

@@ -12,6 +12,8 @@ export type {
   StreamQueueSet,
   BracketStanding,
   CreateTournamentParams,
+  TournamentStateAction,
+  BulkParticipantInput,
 } from '../../types/index.js';
 
 
