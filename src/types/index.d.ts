@@ -111,4 +111,14 @@ export interface BracketStanding {
   isPlacementResolved?: boolean;
 }
 
+export interface CreateTournamentParams {
+  name: string;
+  url?: string;
+  tournamentType?: 'single elimination' | 'double elimination' | 'round robin' | 'swiss';
+  gameName?: string;
+  description?: string;
+  openSignup?: boolean;
+}
+
+
 
