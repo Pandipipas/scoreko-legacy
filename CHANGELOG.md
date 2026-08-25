@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-08-25
+
+### Added
+
+- **Scoreko Dashboard:**
+  - **Start.gg Stream Queue:** Added a dedicated Stream Queue tab in Tournament Hub (`TournamentStreamQueueTab.vue`) with multi-stream channel filtering (Twitch, YouTube), live queue status, and one-click direct push to the active scoreboard.
+  - **Start.gg Standings:** Added a visual tournament standings modal (`TournamentStandingsDialog.vue`) featuring a 1st/2nd/3rd podium with avatars, team tags/sponsors, and a scrollable top placements ranking list.
+  - **Challonge Tournament Creation:** Added an embedded creation stepper in Tournament Hub supporting Single Elimination, Double Elimination, and Round Robin formats with live slug validation and automatic bracket attachment.
+  - **Challonge Tournament Management:** Added a comprehensive management dialog (`TournamentManageDialog.vue`) with lifecycle controls (Start, Finalize, Reset), single and bulk participant management (textarea import, seed shuffling), and safe tournament detachment.
+  - **Match State Controls:** Added a contextual action menu on match cards to mark matches underway or reset completed matches with a confirmation dialog.
+  - **Settings Integration Matrix:** Standardized the integrations section in Settings with a symmetric comparative capabilities matrix between start.gg and Challonge.
+- **Scoreko Extension:**
+  - **Start.gg GraphQL APIs:** Implemented GraphQL query builder and handlers for stream queues, stations, event standings, and mutations for match states (`markSetInProgress`, `resetSet`).
+  - **Challonge REST APIs:** Implemented client endpoints and handlers for tournament creation (`POST /tournaments.json`), lifecycle transitions (`start`, `finalize`, `reset`), match controls (`mark_as_underway`, `reopen`), and participant batch operations (`bulk_add`, `randomize`).
+- **Internationalization (i18n):**
+  - Added full bilingual support (English & Spanish) across all new tournament management dialogs, stream queue views, standings, match state controls, and integration capability matrices.
+
+### Changed
+
+- **Scoreko Dashboard:**
+  - **Tournament Hub:** Redesigned setup header to display active tournament name alongside provider badges and integrated quick actions for stream queue, standings, and management.
+  - **Bracket Store:** Expanded Pinia store with unified reactive state and actions for stream queues, standings, match state mutations, and Challonge lifecycle operations.
+
+---
+
 ## [0.6.0] - 2026-08-19
 
 ### Added
@@ -46,6 +71,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Notifications:** Standardized notification presets, eliminated duplicates, and achieved 100% i18n parity.
   - **Overlays:** Optimized font rendering, FitText scaling, and dynamic caster layout support.
   - **UI/UX:** Implemented fluid micro-interactions and panel transitions.
+- **Documentation:**
+  - Added UI showcase and screenshots to `README.md`.
+  - Added intellectual property notices and trademark disclaimers to `LICENSE`.
 
 ### Changed
 
@@ -65,11 +93,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Window Resolution:** Removed auto-zoom listener and enforced minimum window resolution of 1600x900.
   - **Path Resolution:** Supported adaptive bundle root resolution for sibling repositories.
   - **Security:** Added auto-updater modules to security surface allowlist.
-
-### Documentation
-
-- Added UI showcase and screenshots to `README.md`.
-- Added intellectual property notices and trademark disclaimers to `LICENSE`.
 
 ---
 
@@ -168,28 +191,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Scoreko Core:**
   - **License:** Project license has been changed from MIT to GPL-3.0.
+- **Scoreko Architecture & Performance:**
+  - **Application Startup:** Parallelized the Electron wrapper and NodeCG extension loading sequences, deferred heavy module imports, and migrated all synchronous file system operations to asynchronous I/O (`fs.promises`) to drastically reduce "cold boot" latency.
+  - **Installer & Footprint:** Removed unnecessary NodeCG development dependencies from the final release, excluded unused Chromium locales, and optimized the cross-compilation pipeline, substantially reducing the Windows installer and application size.
+  - **UI Payload:** Implemented dynamic route imports for Vite code-splitting and converted large PNG assets to WebP, significantly decreasing the initial load size of the dashboard.
+  - **Non-blocking Operations:** Migrated the packs downloading logic, SHA-256 integrity checks, and local registry fetching to use asynchronous I/O, preventing the Node.js event loop from freezing during large pack installations.
+  - **Documentation:** Added troubleshooting guidance regarding potential slow first-boots caused by external Antivirus scans.
 
-### Fixed & Security
+### Fixed
 
-- **Security Hardening:**
+- **Scoreko Dashboard & Extension:**
+  - **Dashboard:** Added network timeouts and response validation when fetching new releases from GitHub to prevent the dashboard from hanging.
+  - **Packs Server:** Fixed issues with absolute path resolution to ensure accurate serving of local assets.
+  - **First-Boot Setup:** Fixed a bug where closing the application during the initial setup would incorrectly bypass the setup UI on subsequent launches.
+  - **Memory Management:** Ensured temporary player cleanup intervals in the dashboard are properly disposed, and cleared dangling SIGKILL fallback timers in the wrapper to prevent resource accumulation.
+  - **Auto-Updater:** Resolved an issue where multiple UI event listeners were registered simultaneously for the same update check.
+
+### Security
+
+- **Scoreko Backend & Wrapper:**
   - **Local Server Restrictions:** The internal NodeCG server is now strictly bound to `localhost` to prevent unauthorized external network access.
   - **OAuth Token Storage:** Migrated user OAuth tokens to a secure, server-side encrypted storage.
   - **Asset Pack Validation:** Implemented SHA-256 integrity checks for all downloaded asset packs to ensure their contents haven't been tampered with.
   - **XSS Prevention:** Added proper HTML escaping in OAuth error callbacks and the wrapper's changelog window to prevent Cross-Site Scripting vulnerabilities.
   - **File System Safety:** Enforced a strict MIME type whitelist for served pack files and added input sanitization for pack IDs to prevent unsafe file system operations.
   - **OAuth Proxy:** Hardcoded the official OAuth proxy URL to prevent redirection vulnerabilities.
-- **Bug Fixes & Stability:**
-  - **Dashboard:** Added network timeouts and response validation when fetching new releases from GitHub to prevent the dashboard from hanging.
-  - **Packs Server:** Fixed issues with absolute path resolution to ensure accurate serving of local assets.
-  - **First-Boot Setup:** Fixed a bug where closing the application during the initial setup would incorrectly bypass the setup UI on subsequent launches.
-  - **Memory Management:** Ensured temporary player cleanup intervals in the dashboard are properly disposed, and cleared dangling SIGKILL fallback timers in the wrapper to prevent resource accumulation.
-  - **Auto-Updater:** Resolved an issue where multiple UI event listeners were registered simultaneously for the same update check.
-- **Performance Optimizations:**
-  - **Application Startup:** Parallelized the Electron wrapper and NodeCG extension loading sequences, deferred heavy module imports, and migrated all synchronous file system operations to asynchronous I/O (`fs.promises`) to drastically reduce "cold boot" latency.
-  - **Installer & Footprint:** Removed unnecessary NodeCG development dependencies from the final release, excluded unused Chromium locales, and optimized the cross-compilation pipeline, substantially reducing the Windows installer and application size.
-  - **UI Payload:** Implemented dynamic route imports for Vite code-splitting and converted large PNG assets to WebP, significantly decreasing the initial load size of the dashboard.
-  - **Non-blocking Operations:** Migrated the packs downloading logic, SHA-256 integrity checks, and local registry fetching to use asynchronous I/O, preventing the Node.js event loop from freezing during large pack installations.
-  - **Documentation:** Added troubleshooting guidance regarding potential slow first-boots caused by external Antivirus scans.
 
 ---
 
@@ -227,6 +253,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > **Note:** Versions prior to `0.6.0` (`v0.1.0` – `v0.5.0`) correspond to the legacy repositories.
 
+[0.7.0]: https://github.com/Pandipipas/scoreko/releases/tag/v0.7.0
 [0.6.0]: https://github.com/Pandipipas/scoreko/releases/tag/v0.6.0
 [0.5.0]: https://github.com/Pandipipas/scoreko-legacy/releases/tag/v1.0.0-alpha.3
 [0.4.0]: https://github.com/Pandipipas/scoreko-legacy/releases/tag/v1.0.0-alpha.2
