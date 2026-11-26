@@ -1,3 +1,7 @@
+> [!IMPORTANT]
+> **Archived Legacy Repository:** This repository holds the original NodeCG + Electron generation of Scoreko (`v0.1.0` - `v0.7.1`) and is no longer actively maintained.
+> Active development (Scoreko `v0.8.0+`, rewritten on Tauri v2 and Rust) continues in **[Pandipipas/scoreko](https://github.com/Pandipipas/scoreko)**.
+
 <a id="readme-top"></a>
 
 
